@@ -90,7 +90,7 @@ npm run marp
 
 封面、章节过渡与可组合的内容布局。
 
-<!-- 这一页本身就是 transition 示例：编号、章节名和一句引导。标题与品牌线保持固定，删除可选文字不改变位置。 -->
+<!-- 这一页本身就是 transition 示例：编号、章节名和一句引导。标题与强调线保持固定，删除可选文字不改变位置。 -->
 
 ---
 
@@ -131,7 +131,7 @@ npm run marp
 </div>
 </div>
 
-<!-- 第 1 页展示真实封面，五个章节入口展示真实过渡页。封面与过渡页品牌线距顶部 400px；封面 h1 自身居中于上部。可用 <br> 手动换行。封面清空页眉页脚、跳过编号的完整写法见本文件第一页。 -->
+<!-- 第 1 页展示真实封面，五个章节入口展示真实过渡页。封面与过渡页强调线距顶部 400px；封面 h1 自身居中于上部。可用 <br> 手动换行。封面清空页眉页脚、跳过编号的完整写法见本文件第一页。 -->
 
 ---
 
@@ -169,7 +169,7 @@ npm run marp
 </div>
 </div>
 
-<!-- 本页本身使用 compact，下一页自动恢复常规。紧凑布局仅调整正文，标题、品牌线与正文起点保持不动，图像高度仍由作者选择。 -->
+<!-- 本页本身使用 compact，下一页自动恢复常规。紧凑布局仅调整正文，标题、强调线与正文起点保持不动，图像高度仍由作者选择。 -->
 
 ---
 
@@ -465,7 +465,7 @@ x^2^ 与 H~2~O
 
 冒号控制列对齐；`==` 高亮，`^` 上标，`~` 下标，`~~` 删除线。
 
-<!-- 表格与删除线属于 GFM 扩展，Marp Core 默认启用；高亮与上下标由 markdown-it-mark / sup / sub 提供，分别生成 mark / sup / sub。高亮使用现有文字选区的淡品牌色，保留正文文字色；上下标沿用原生排版，复杂表达式仍使用数学公式。表中数字仅用于展示对齐。参考：https://github.github.com/gfm/#tables-extension- 、https://github.com/markdown-it/markdown-it-mark 、https://github.com/markdown-it/markdown-it-sup 和 https://github.com/markdown-it/markdown-it-sub -->
+<!-- 表格与删除线属于 GFM 扩展，Marp Core 默认启用；高亮与上下标由 markdown-it-mark / sup / sub 提供，分别生成 mark / sup / sub。高亮使用现有文字选区的淡强调色，保留正文文字色；上下标沿用原生排版，复杂表达式仍使用数学公式。表中数字仅用于展示对齐。参考：https://github.github.com/gfm/#tables-extension- 、https://github.com/markdown-it/markdown-it-mark 、https://github.com/markdown-it/markdown-it-sup 和 https://github.com/markdown-it/markdown-it-sub -->
 
 ---
 
@@ -582,7 +582,7 @@ flowchart TD
 </div>
 </div>
 
-<!-- IMPORTANT 采用 2px 品牌色边框和现有淡品牌色底，默认省略重复标题；NOTE 使用灰阶边界与浅层底色。正文、粗体与斜体继承所在段落的文字颜色。标注块可用于整页结论，也可直接放入 cf-col；解析由 Cinderfolio 的引擎扩展提供，样式随 cf-marp.css 导出。 -->
+<!-- IMPORTANT 采用 2px 强调色边框和现有淡强调底色，默认省略重复标题；NOTE 使用灰阶边界与浅层底色。正文、粗体与斜体继承所在段落的文字颜色。标注块可用于整页结论，也可直接放入 cf-col；解析由 Cinderfolio 的引擎扩展提供，样式随 cf-marp.css 导出。 -->
 
 ---
 
@@ -624,7 +624,7 @@ flowchart TD
 </div>
 </div>
 
-<!-- 五种标记共用现有品牌色与灰阶，通过标题及边框区分职责；不引入额外红黄绿配色。普通 > 仍是引用。标记采用 GitHub 风格，Markdown 标注块由引擎在构建期转换为 HTML，不需要额外浏览器脚本。参考：https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts -->
+<!-- 五种标记共用现有强调色系与灰阶，通过标题及边框区分职责；不引入额外红黄绿配色。普通 > 仍是引用。标记采用 GitHub 风格，Markdown 标注块由引擎在构建期转换为 HTML，不需要额外浏览器脚本。参考：https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts -->
 
 ---
 

@@ -2,7 +2,7 @@
 export const seeds = {
   ink: '#121212',   // 炭黑：沿用原站暗色画布，兼作中性轴的深色端。
   paper: '#fafaf8', // 微暖白：中性轴的浅色端，兼作亮色画布。
-  accent: '#f97316', // 可替换的主题色；默认沿用已确认的橙色。
+  accent: '#f97316', // 品牌基准色；由此生成强调色系，默认沿用已确认的橙色。
 };
 
 /** 在编码后的 sRGB 通道内插值，对应 color-mix(in srgb, a p%, b)。
@@ -35,7 +35,7 @@ export function grayIndex(lightIndex, mode) {
 }
 
 /** 只改变 HSL 明度，保留种子的色相和饱和度；delta 的单位是百分点。
- * 不混入 ink，保留主题色本身的色相和饱和度。
+ * 不混入 ink，保留品牌基准色本身的色相和饱和度。
  */
 export function adjustLightness(hex, delta) {
   const [r, g, b] = [1, 3, 5].map(index => parseInt(hex.slice(index, index + 2), 16) / 255);
@@ -65,7 +65,7 @@ export function createAccentScale(accent = seeds.accent) {
 
 /** gray 只引用 g0…g16 的亮色档位，暗色自动镜像，不再单独手调混合比例。
  * 同一档可以服务多个职责，代码与图表继续复用这些职责色。
- * 主题色保留已确认的明度步长、用途与选中底色公式。
+ * 强调色系保留已确认的明度步长、用途与选中底色公式。
  */
 export const recipes = {
   background: { label: '画布', gray: 16, usage: '页面、导航、侧栏、代码块、提示框内行内代码与图表节点' },
@@ -77,13 +77,13 @@ export const recipes = {
   border: { label: '淡分隔线', gray: 14, usage: '导航底线、表格、卡片、图表外框与滚动条' },
   borderStrong: { label: '强分隔线', gray: 12, usage: '弹窗外框、明确分组与滚动条悬停' },
   controlBorder: { label: '控件边界', gray: 5, usage: '次要按钮、切换按钮与搜索输入框的边界' },
-  controlSelectedBackground: { label: '控件选中底色', accent: 'brand', usage: '切换按钮等控件的品牌色实底' },
-  controlSelectedForeground: { label: '控件选中文字', contrast: 'controlSelectedBackground', usage: '品牌色实底上的文字与滑块，自动选择对比更高的端点' },
+  controlSelectedBackground: { label: '控件选中底色', accent: 'brand', usage: '切换按钮等控件直接使用品牌基准色的实底' },
+  controlSelectedForeground: { label: '控件选中文字', contrast: 'controlSelectedBackground', usage: '品牌基准色实底上的文字与滑块，自动选择对比更高的端点' },
   interaction: { label: '交互提示', accent: 'brand', usage: '导航强调、悬浮提示、焦点、搜索当前项边框、代码高亮线与复制成功提示' },
   link: { label: '链接与当前项目文字', accent: { light: 'dark', dark: 'light' }, usage: '正文链接、当前项目文字与语法关键词' },
   diagramStroke: { label: '图表描边', accent: { light: 'darker', dark: 'light' }, usage: '图表节点与分组描边' },
   selection: { label: '文字选区底色', mix: ['accent', 'background', 25], usage: '鼠标或键盘选择文字；正文、说明与链接保留原字色' },
-  selectedBackground: { label: '当前项目底色', mix: ['accent', 'background', 15], usage: '当前导航、项目与代码高亮行的淡品牌色底' },
+  selectedBackground: { label: '当前项目底色', mix: ['accent', 'background', 15], usage: '当前导航、项目与代码高亮行的淡强调底色' },
 };
 
 export function createPalette(input = seeds) {

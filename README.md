@@ -1,12 +1,14 @@
 # Cinderfolio
 
-以深色、浅色和品牌色三个输入生成统一配色，导出 Rspress、Pele、Mermaid、Shiki 与 Marp 主题。包含十六等分灰阶、五档品牌色、亮暗职责映射和品牌衍生的八个分类色。
+以深色、浅色和品牌基准色三个输入生成统一配色，导出 Rspress、Pele、Mermaid、Shiki 与 Marp 主题。包含十六等分灰阶、五档强调色系、亮暗职责映射和从品牌基准色衍生的八个分类色。
 
 [源码](https://github.com/sj-shijin/cinderfolio) · [在线调色与预览](https://shijin.space/projects/cinderfolio/)
 
 ```js
 const input = { ink: '#121212', paper: '#fafaf8', accent: '#f97316' };
 ```
+
+中文名称统一为：`gray` 是灰阶，`accent` 是强调色系，`brand` 是其中的品牌基准色。输入字段 `accent` 指定品牌基准色；`createAccentScale()` 以它为起点生成 `darker / dark / brand / light / lighter` 五档，`brand` 的明度偏移为零。图表中区分类别的八色称为“分类色”，不归入强调色系的五档。
 
 ## 生成主题
 
@@ -152,7 +154,7 @@ transition: fade 300ms # HTML 翻页淡入淡出
 
 标题约定：封面 `#`、正文与过渡页页题 `##`、页内小标题 `###`；分页仍使用 `---`。封面可写成 `# 报告标题 <small>副标题</small>`，省略 `small` 即只有主标题；主标题自身居中，副标题不参与定位，纯主题 CSS 即可使用。
 
-正文默认使用常规布局；单页添加 `compact` 收紧正文，标题、品牌线和正文起点不动，分栏继续使用 `cf-cols / cf-col`：
+正文默认使用常规布局；单页添加 `compact` 收紧正文，标题、强调线和正文起点不动，分栏继续使用 `cf-cols / cf-col`：
 
 ```markdown
 <!-- _class: compact -->
@@ -174,9 +176,9 @@ transition: fade 300ms # HTML 翻页淡入淡出
 > 结果基于相同数据与硬件。
 ```
 
-`IMPORTANT` 使用品牌色框与淡品牌色底，默认不加标题；`NOTE / TIP / WARNING / CAUTION` 分别显示“说明／提示／注意／警告”。小号提示标题使用端点文字色与字重，品牌色用于边框和底色；正文继承文字颜色，普通引用保留原有样式。
+`IMPORTANT` 使用强调色边框与淡强调底色，默认不加标题；`NOTE / TIP / WARNING / CAUTION` 分别显示“说明／提示／注意／警告”。小号提示标题使用端点文字色与字重，强调色用于边框和底色；正文继承文字颜色，普通引用保留原有样式。
 
-行内支持 `==高亮==`、`x^2^`、`H~2~O`。高亮复用淡品牌色并保留原字色；上下标使用原生 `sup / sub` 排版，复杂表达式使用数学公式。
+行内支持 `==高亮==`、`x^2^`、`H~2~O`。高亮复用淡强调色并保留原字色；上下标使用原生 `sup / sub` 排版，复杂表达式使用数学公式。
 
 构建任意已有的 Markdown 文稿，自动加载同一配色、字体、Pele、Shiki 和 Markdown 扩展，无需先运行 `npm run build`：
 
@@ -202,7 +204,7 @@ await buildMarp('./talk.md'); // 返回同目录 HTML 的绝对路径
 
 ### 适配范围
 
-- Marp 的[分割背景图](https://marpit.marp.app/image-syntax?id=split-backgrounds)（`![bg left]`、`![bg right]` 及占比设置）会改变正文区域，与本主题固定的标题、贯穿品牌线和页眉页脚布局尚未完整适配；图文并排优先使用 `cf-cols / cf-col`。
+- Marp 的[分割背景图](https://marpit.marp.app/image-syntax?id=split-backgrounds)（`![bg left]`、`![bg right]` 及占比设置）会改变正文区域，与本主题固定的标题、贯穿强调线和页眉页脚布局尚未完整适配；图文并排优先使用 `cf-cols / cf-col`。
 - 任务列表、脚注尚未启用；示例只展示写法。
 
 [Marp for VS Code](https://github.com/marp-team/marp-vscode#use-custom-theme-css) 可通过 `markdown.marp.themes` 加载 `dist/cf-marp.css`，封面与其他版式均只需主题 CSS。当前官方扩展未提供自定义引擎配置入口，加载 CSS 不会接入 Pele、Shiki、标注块、行内标记扩展或本地字体。完整预览与导出仍在集成终端运行上述 CLI 路线；编辑器内的进一步适配尚未接入。
