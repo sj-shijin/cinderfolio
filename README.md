@@ -35,11 +35,12 @@ dist/
   cf-mermaid-dark.json   # Mermaid 官方渲染器暗色配置
   cf-shiki-light.json    # Shiki 亮色主题，具体 HEX
   cf-shiki-dark.json     # Shiki 暗色主题，具体 HEX
-  cf-marp.css            # Marp 主题，包含 Pele / Shiki 样式
+  cf-marp.css            # Marp 主题，包含 Pele / Shiki / 算法样式
+  cf-pseudocode.css      # 算法排版，复用已有 --cf-* 变量
   LICENSE               # 分发主题时一并保留
 ```
 
-修改默认颜色时编辑 `palette.mjs` 的 `seeds`；运行时生成可直接传入三个颜色。各适配 CSS 均自包含，不要求同时加载 `colors.css`。
+修改默认颜色时编辑 `palette.mjs` 的 `seeds`；运行时生成可直接传入三个颜色。Rspress、Pele 与 Marp CSS 包含配色变量，不要求同时加载 `colors.css`；算法样式复用页面已有的变量。
 
 ## 在其他项目使用
 
@@ -98,6 +99,57 @@ import { withPeleHitAreas } from 'cinderfolio/pele';
 
 const svg = withPeleHitAreas(render(source).svg);
 ```
+
+## 论文式伪代码
+
+`pseudocode` 围栏使用 pseudocode.js 2.4.1 的 `algorithmic` 语法。每个围栏放一个算法，支持标题、行号、输入输出、嵌套缩进和行内公式；普通 `python` 等围栏仍交给 Shiki。
+
+````markdown
+```pseudocode
+\begin{algorithm}
+\caption{Conflict check}
+\begin{algorithmic}
+\INPUT Conflict clause $C$
+\IF{$C \ne \mathrm{None}$}
+  \RETURN $C$
+\ENDIF
+\end{algorithmic}
+\end{algorithm}
+```
+````
+
+Marp 引擎自动处理此围栏，公式和算法文字跟随文稿的 `math: katex` 或 `math: mathjax`。也可使用 `pseudocode math=katex` / `pseudocode math=mathjax` 显式指定某个算法的引擎。默认遵循 Marp 的 MathJax 设置。
+
+横线粗细、标题间距与行距遵循 pseudocode.js 原始样式；三条横线统一使用 `--cf-text-muted`，比正文淡三级。关键词通过 `light-dark()` 读取 `--cf-accent-darker` 与 `--cf-accent-light`，分别用于浅色与深色主题，与 Shiki 的流程导航色一致。Cinderfolio 将 `noEnd` 与 `scopeLines` 统一默认为 `true`：隐藏 `end if` 等结束行，显示缩进竖线。可在围栏中显式设为 `false`，也可传给 `renderPseudocode()`；算法源文仍须保留结束命令。行号沿用官方演示的开启设置，编号按文档重新计数。
+
+算法容器单独设置字体、字重、字号、行高和文本对齐；网页默认字号为 `1rem`，Marp 默认 `24px`，行高固定为官方的 `1.2`。Marp 的正文或 `compact` 字号不会改变算法。按需设置 `--cf-pseudocode-font-size` 即可独立缩放算法文字与缩进：
+
+```css
+/* Marp 文稿内可按页面类名限定作用范围。 */
+section.algorithm-page { --cf-pseudocode-font-size: 20px; }
+```
+
+这是普通 HTML 的排版隔离，仍可选择和复制文字，也沿用 Marp 的 PDF 导出；不阻止自定义 CSS 直接覆盖算法元素。
+
+KaTeX 模式的算法文字使用 KaTeX Main；MathJax 3.2.2 模式使用 MathJax TeX 的 Main 字体，公式由对应引擎排版。数学变量与符号保留引擎原生字形；中文使用 `--cf-pseudocode-cjk` 指定的后备字体（Marp 为 Noto Sans SC）。关键词、行号和缩进线继续读取 Cinderfolio 颜色变量。独立 HTML 内嵌两套本地公式字体，切换文稿引擎后重新构建即可，也支持原生 watch。
+
+其他 Markdown 构建器可在高亮之前调用共享接口：
+
+```js
+import { renderPseudocode } from 'cinderfolio/pseudocode-render';
+const html = renderPseudocode(source, 1, { math: 'mathjax' });
+// 第二参数为当前文档内的算法编号；math 默认 katex。
+```
+
+网页加载 `cinderfolio/themes/cf-pseudocode.css` 并提供 Cinderfolio 配色变量。KaTeX 公式配套加载项目本地的 `katex/dist/katex.min.css`；MathJax 公式配套使用 `pseudocodeMathCss('mathjax')` 生成的静态 CSS（包含本地字体与许可）。两种引擎的算法都在构建期生成 HTML，浏览器无需加载 pseudocode.js 或 MathJax；源 Markdown 保留原始围栏。
+
+配合 `cf-rspress.css`，网页算法具有与代码块一致的细边框、圆角和留白；算法作为 Tab 的唯一内容时共用标签外框，多块内容则各自保留边框。网页外框由 Rspress 适配层提供，Marp 保留算法自身的论文式排版。
+
+网站可传入 `pseudocodeMathCss('mathjax', { fontURL: './mathjax-fonts' })`，将 `mathjax-full/es5/output/chtml/fonts/woff-v2/` 部署到对应目录，并将 `cinderfolio/fonts/mathjax-text/` 部署到其 `text/` 子目录，让字体按需加载、独立缓存；省略 `fontURL` 则内嵌字体。
+
+MathJax 3 的公式字体采用接近零的垂直度量，不能直接用作普通文字。算法文字使用同系列、具有正常度量的原始 TeX 字体；公式保留 MathJax 3.2.2 自带字体与定位。来源、许可与校验和见 [`fonts/mathjax-text/`](fonts/mathjax-text/README.md)。
+
+pseudocode.js 同时发现两个引擎时会优先 KaTeX，因此 MathJax 模式在隔离上下文中加载上游原始浏览器包，只提供 MathJax 的 `tex2chtml` 适配。没有修改依赖源码，也不切换进程全局变量。上游字体命令写入的 KaTeX 字体名在输出中映射为引擎对应的 CSS 变量。
 
 ## Mermaid
 

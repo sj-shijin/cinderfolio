@@ -98,6 +98,23 @@ html .rp-codeblock__content--line-numbers code .line::before {
   color: var(--cf-text-subtle);
 }
 
+/* 网页算法容器沿用代码块外框；算法本身的排版由 cf-pseudocode.css 负责。 */
+.rp-doc .cf-pseudocode {
+  box-sizing: border-box;
+  margin: 1rem 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--cf-border);
+  border-radius: var(--rp-radius);
+}
+
+/* 与原生 CodeBlock 一致：单内容标签页共用 Tabs 外框。 */
+.rp-tabs__content__item > .cf-pseudocode:only-child {
+  max-width: none;
+  margin: 0 -1rem;
+  border: 0;
+  border-radius: 0;
+}
+
 /* 普通行高亮复用淡品牌色底与交互强调，错误和警告保留各自的语义色。 */
 html .shiki.has-highlighted .line.highlighted:not(.error):not(.warning) {
   background-color: var(--cf-selected-background);

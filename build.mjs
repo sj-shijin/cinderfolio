@@ -8,6 +8,7 @@ import { seeds, recipes, grayDivisions, createGrayScale, accentSteps, createAcce
 import { createColorCss, createPeleCss } from './css.mjs';
 import { createRspressCss } from './rspress.mjs';
 import { createMarpCss } from './marp.mjs';
+import { createPseudocodeCss } from './pseudocode.mjs';
 import { peleRoles, createPelePalette } from './pele.mjs';
 import { createMermaidTheme } from './mermaid.mjs';
 import { seriesRecipe } from './oklch.mjs';
@@ -97,6 +98,7 @@ const artifacts = {
   // 原生主题选择器只存在于 Rspress 产物；Pele 与通用 CSS 不知道 rp-dark。
   'cf-rspress.css': createRspressCss(),
   'cf-marp.css': createMarpCss(),
+  'cf-pseudocode.css': createPseudocodeCss(),
   'cf-shiki-light.json': `${JSON.stringify(shikiThemes.light, null, 2)}\n`,
   'cf-shiki-dark.json': `${JSON.stringify(shikiThemes.dark, null, 2)}\n`,
   'cf-mermaid-light.json': `${JSON.stringify(createMermaidTheme(seeds, 'light'), null, 2)}\n`,

@@ -7,6 +7,7 @@ import { bundledLanguagesInfo, createHighlighter } from 'shiki';
 import { createShikiTheme } from './shiki.mjs';
 import { marpFonts } from './marp.mjs';
 import { withPeleHitAreas } from './pele-svg.mjs';
+import { renderPseudocode, pseudocodeOptions } from './pseudocode-render.mjs';
 
 export default {
   lang: 'zh-CN',
@@ -41,8 +42,23 @@ export default {
 
     // 其余围栏保留 Marp 原生渲染流程，包括代码块的自动缩放。
     const fence = marp.markdown.renderer.rules.fence;
+    marp.markdown.core.ruler.push('cinderfolio_pseudocode_numbering', state => {
+      let number = 0;
+      for (const token of state.tokens) {
+        if (token.type === 'fence' && token.info.trim().split(/\s+/)[0] === 'pseudocode') {
+          token.meta = { ...token.meta, pseudocodeNumber: ++number };
+        }
+      }
+    });
     marp.markdown.renderer.rules.fence = (tokens, position, options, env, renderer) => {
       const token = tokens[position];
+      if (token.info.trim().split(/\s+/)[0] === 'pseudocode') {
+        const configured = marp.options.math;
+        const fallback = marp.lastGlobalDirectives.math
+          ?? (typeof configured === 'string' ? configured : configured?.lib) ?? 'mathjax';
+        return renderPseudocode(token.content, token.meta.pseudocodeNumber,
+          pseudocodeOptions(token.info, fallback));
+      }
       if (token.info.trim().split(/\s+/)[0].toLowerCase() !== 'mermaid') {
         return fence(tokens, position, options, env, renderer);
       }

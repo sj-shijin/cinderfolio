@@ -22,6 +22,8 @@
     "./mermaid": "./mermaid.mjs",
     "./rspress": "./rspress.mjs",
     "./shiki": "./shiki.mjs",
+    "./pseudocode": "./pseudocode.mjs",
+    "./pseudocode-render": "./pseudocode-render.mjs",
     "./marp": "./marp.mjs",
     "./marp-engine": "./marp-engine.mjs",
     "./marp-build": "./scripts/build_marp.mjs",
@@ -78,6 +80,8 @@
     "@mdit/plugin-alert": "0.23.2",
     "markdown-it-mark": "4.0.0",
     "markdown-it-sub": "2.0.0",
-    "markdown-it-sup": "2.0.0"
+    "markdown-it-sup": "2.0.0",
+    "mathjax-full": "3.2.2",
+    "pseudocode": "2.4.1"
   }
 }

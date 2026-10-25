@@ -3,6 +3,7 @@ import { seeds } from './palette.mjs';
 import { themeVariables, createPeleAdapterCss } from './css.mjs';
 import { createPeleTheme } from './pele.mjs';
 import { licenseComment } from './license.mjs';
+import { createPseudocodeCss } from './pseudocode.mjs';
 
 // 图表与正文共用同一字体栈；字体资源由使用方随 Marp 文档加载。
 export const marpFonts = {
@@ -127,6 +128,10 @@ pre.shiki span {
   font-style: var(--shiki-light-font-style, normal);
   text-decoration: var(--shiki-light-text-decoration, none);
 }
+${createPseudocodeCss()}
+/* 算法字号按画布像素设置，独立于 section / compact 的正文排版。 */
+section { --cf-pseudocode-font-size: 24px; }
+section .cf-pseudocode { --cf-pseudocode-cjk: "Noto Sans SC", sans-serif; margin: 0; }
 figure.cinderfolio-pele { margin: 0 0 var(--cf-marp-body-space); --pele-font: ${marpFonts.text}; --pele-font-mono: ${marpFonts.code}; }
 figure.cinderfolio-pele > svg { display: block; width: 100%; margin-inline: auto; }
 

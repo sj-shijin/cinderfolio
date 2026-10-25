@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { marpCli, waitForObservation } from '@marp-team/marp-cli';
 import { createMarpCss } from '../marp.mjs';
+import { pseudocodeMathCss } from '../pseudocode-render.mjs';
 
 const example = new URL('../examples/marp.md', import.meta.url);
 const defaultFonts = new URL('../fonts/marp/', import.meta.url);
@@ -17,7 +18,7 @@ async function themeWithFonts(output, fontDirectory) {
   const relative = path.relative(path.dirname(output), directory).split(path.sep).map(encodeURIComponent).join('/') || '.';
   const fonts = await fs.readFile(path.join(directory, 'font.css'), 'utf8');
   // 字体声明进入主题 CSS，原生 watch 每次重建都能保留，无需事后改写 HTML。
-  return `${createMarpCss()}\n${fonts.replaceAll('url("./', `url("${relative}/`)}`;
+  return `${pseudocodeMathCss()}\n${pseudocodeMathCss('mathjax')}\n${createMarpCss()}\n${fonts.replaceAll('url("./', `url("${relative}/`)}`;
 }
 
 /** 默认输出在源文件旁；output / fontDirectory 供网站等使用方显式安排导出资源。 */

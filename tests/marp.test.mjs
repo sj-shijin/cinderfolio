@@ -12,6 +12,48 @@ import config from '../marp-engine.mjs';
 
 const parser = unified().use(rehypeParse, { fragment: true });
 let marp;
+
+test('论文式算法与 Python 代码并存，重复构建的算法编号稳定', async () => {
+  const algorithm = String.raw`\begin{algorithm}
+\caption{CDCL}
+\begin{algorithmic}
+\STATE $C \gets$ \CALL{Propagate}{}
+\end{algorithmic}
+\end{algorithm}`;
+  const source = '## 算法\n\n```pseudocode\n' + algorithm + '\n```\n\n---\n\n## Python\n\n```python\nreturn None\n```';
+  for (let i = 0; i < 2; i++) {
+    const { html } = marp.render(source);
+    assert.match(html, /class="cf-pseudocode"/);
+    assert.match(html, /Algorithm 1/);
+    assert.match(html, /data-math="mathjax"/);
+    assert.match(html, /jax="CHTML"/);
+    assert.match(html, /class="shiki /);
+  }
+});
+test('算法默认跟随 Marp 文稿的公式引擎，围栏可以显式覆盖', () => {
+  const algorithm = String.raw`\begin{algorithmic}\STATE $x \gets 1$\end{algorithmic}`;
+  for (const math of ['katex', 'mathjax']) {
+    const other = math === 'katex' ? 'mathjax' : 'katex';
+    const source = `---\nmath: ${math}\n---\n\n\`\`\`pseudocode\n${algorithm}\n\`\`\`\n\n\`\`\`pseudocode math=${other}\n${algorithm}\n\`\`\``;
+    const algorithms = elements(parser.parse(marp.render(source).html), node => node.properties?.className?.includes('cf-pseudocode'));
+    assert.deepEqual(algorithms.map(node => node.properties.dataMath), [math, other]);
+    for (const [node, engine] of [[algorithms[0], math], [algorithms[1], other]]) {
+      assert.equal(elements(node, n => n.tagName === 'mjx-container').length, engine === 'mathjax' ? 1 : 0);
+      assert.equal(elements(node, n => n.properties?.className?.includes('katex')).length, engine === 'katex' ? 1 : 0);
+    }
+  }
+});
+test('Marp 围栏默认隐藏结束行并显示缩进竖线，也支持显式覆盖', () => {
+  const algorithm = String.raw`\begin{algorithmic}
+\IF{$p < r$}\STATE $q \gets p$\ENDIF
+\end{algorithmic}`;
+  const compact = marp.render('```pseudocode\n' + algorithm + '\n```').html;
+  assert.doesNotMatch(compact, /end if/);
+  assert.match(compact, /with-scopelines/);
+  const official = marp.render('```pseudocode noEnd=false scopeLines=false\n' + algorithm + '\n```').html;
+  assert.match(official, /end if/);
+  assert.doesNotMatch(official, /with-scopelines/);
+});
 before(async () => {
   // 与 CLI 一致，保留 Marp 默认的安全 HTML 允许列表。
   marp = await config.engine({ marp: new Marp() });
