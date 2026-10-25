@@ -10,7 +10,7 @@ const input = { ink: '#121212', paper: '#fafaf8', accent: '#f97316' };
 
 ## 生成主题
 
-需要 Node.js 20.19+ 或 22.12+。生成 CSS / JSON 仅使用 Node.js 内置模块，无需安装依赖。
+统一使用 Node.js 22.12+（推荐 24）。生成 CSS / JSON 仅使用 Node.js 内置模块，无需安装依赖。
 
 ```sh
 git clone https://github.com/sj-shijin/cinderfolio.git
@@ -18,7 +18,7 @@ cd cinderfolio
 ```
 
 ```sh
-npm run build                         # 生成 dist/，会清理该目录
+npm run build                         # 更新 dist/ 中的主题文件，保留其他内容
 npm run check                         # 核对产物及默认配色对比度
 node build.mjs --out-dir /tmp/cf-theme # 指定输出目录
 ```
@@ -109,19 +109,28 @@ mermaid.initialize({ ...createMermaidTheme(input, 'light'), startOnLoad: false }
 const { svg } = await mermaid.render('diagram-id', source);
 ```
 
-也可读取导出的 JSON 代替生成函数。切换亮暗后由使用方应用对应配置并重新渲染；生成主题本身不依赖 Mermaid、DOM 或网站代码。适配以 Mermaid 12.2.0 验证，渲染器需要 Node.js 22.12+；纯主题导出的 Node.js 要求不变。通用主题不附带字体文件。
+也可读取导出的 JSON 代替生成函数。切换亮暗后由使用方应用对应配置并重新渲染；生成主题本身不依赖 Mermaid、DOM 或网站代码。适配以 Mermaid 12.2.0 验证，运行环境同样使用 Node.js 22.12+。通用主题不附带字体文件。
 
 ## Marp
 
 ```sh
-npm ci         # 安装独立项目的锁定依赖；测试和渲染示例需要
-npm run marp   # 生成 dist/marp/，包含 16:9、4:3 HTML、字体和图片
-npm test       # 配色、独立导出、真实 Shiki 语法与 Marp 渲染测试
+npm ci                # 安装锁定依赖
+npm run marp-preview  # 构建现有示例并打开实时预览；Ctrl+C 停止
+npm run marp          # 只构建 examples/marp.html
+npm test              # 配色、语法与 Marp 渲染测试
 ```
 
 `examples/marp.md` 是 Cinderfolio-Marp 使用演示，分为快速开始、特性展示、标准 Markdown、扩展 Markdown、原生 Marp 五章。核心语法与渲染效果对照展示；表格、删除线、高亮、上下标、公式、Pele 图表与标注块放在扩展章；文档与单页配置、图片尺寸、分步列表放在原生 Marp 章。任务列表与脚注仅列写法，尚未启用。
 
-生成的 HTML 保留 Marp 官方播放器，可整体复制 `dist/marp/` 分享。字体固定为 Inter、Noto Sans SC、Sarasa Mono SC，本地 WOFF2 随示例分发。
+默认源文件是仓库已有的 `examples/marp.md`，HTML 生成在它旁边。修改并保存这份 Markdown，预览自动重新构建、刷新；比例跟随文稿里的 `size`。字体固定为 Inter、Noto Sans SC、Sarasa Mono SC，直接引用仓库内的 WOFF2。
+
+实时预览复用 [Marp CLI 原生 watch / preview](https://github.com/marp-team/marp-cli#watch-mode)。自动打开窗口需要本机已安装 Chrome、Edge 或 Firefox；也可只启动监听，再用自己的浏览器打开 HTML：
+
+```sh
+npm run marp-preview -- --no-open
+```
+
+监听范围是 Markdown 和本次生成的主题 CSS；单独替换图片后手动刷新，修改主题生成器或渲染引擎后重启预览。`npm run build` 只更新主题文件，不删除 `dist/marp/` 等其他内容。
 
 ```yaml
 ---
@@ -164,13 +173,32 @@ transition: fade 300ms # HTML 翻页淡入淡出
 
 行内支持 `==高亮==`、`x^2^`、`H~2~O`。高亮复用淡品牌色并保留原字色；上下标使用原生 `sup / sub` 排版，复杂表达式使用数学公式。
 
-在本项目内转换其他文稿，使用通用渲染扩展启用 Pele、Shiki、标注块与行内标记：
+构建任意已有的 Markdown 文稿，自动加载同一配色、字体、Pele、Shiki 和 Markdown 扩展，无需先运行 `npm run build`：
 
 ```sh
-npx --no-install marp slides.md --config-file ./marp-engine.mjs --theme-set ./dist/cf-marp.css -o slides.html
+npm run marp -- /path/to/talk.md          # 在源文件旁生成 talk.html
+npm run marp-preview -- /path/to/talk.md  # 构建、打开窗口并监听
+npm run marp -- --help
 ```
 
-其他项目可通过 `cinderfolio/marp-engine` 引用该配置，或通过 `cinderfolio/marp-build` 的 `buildMarpExample(outputDirectory)` 构建随包样张。这两个入口需要使用方安装 Marp CLI、Pele 和 Shiki；它们不参与纯主题导出。
+源文件不改写，图片等资源保持原有路径，不复制或搬动；无需名为 `assets/` 的目录。`./figures/a.png`、`../images/b.svg` 等相对引用都以 HTML 所在目录解析。路径包含空格时加引号。
+
+字体声明写入 HTML，字体文件仍从 Cinderfolio 安装目录读取；分享 HTML 时，需要自行保留它引用的素材和字体路径。`-o /path/to/talk.html` 可另行指定 HTML 位置，此时相对素材路径也由使用方安排。
+
+作为本地依赖安装后，可运行 `npx --no-install cinderfolio-marp /path/to/talk.md --preview`，或通过 JavaScript 调用：
+
+```js
+import { buildMarp } from 'cinderfolio/marp-build';
+
+await buildMarp('./talk.md'); // 返回同目录 HTML 的绝对路径
+```
+
+`buildMarpExample(outputDirectory, { fontDirectory })` 保留网站使用的双比例渲染入口，资源打包由网站负责。`cinderfolio/marp-engine` 仍可作为原生 Marp CLI 配置使用。这些渲染入口需要安装 Marp CLI、Pele 和 Shiki；它们不参与纯主题导出。
+
+### 适配范围
+
+- Marp 的[分割背景图](https://marpit.marp.app/image-syntax?id=split-backgrounds)（`![bg left]`、`![bg right]` 及占比设置）会改变正文区域，与本主题固定的标题、贯穿品牌线和页眉页脚布局尚未完整适配；图文并排优先使用 `cf-cols / cf-col`。
+- 任务列表、脚注尚未启用；示例只展示写法。
 
 [Marp for VS Code](https://github.com/marp-team/marp-vscode#use-custom-theme-css) 可通过 `markdown.marp.themes` 加载 `dist/cf-marp.css`，封面与其他版式均只需主题 CSS。当前官方扩展未提供自定义引擎配置入口，加载 CSS 不会接入 Pele、Shiki、标注块、行内标记扩展或本地字体。完整预览与导出仍在集成终端运行上述 CLI 路线；编辑器内的进一步适配尚未接入。
 

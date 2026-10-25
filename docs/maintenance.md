@@ -15,7 +15,7 @@ css.mjs                  # 通用变量与独立 Pele CSS
 license.mjs              # 浏览器生成 CSS 时附带 MIT 全文；测试与 LICENSE 核对
 build.mjs                # 纯 Node.js 主题导出、对比度记录与产物检查
 marp-engine.mjs          # Marp CLI 通用配置：Pele、Shiki、Markdown 扩展
-scripts/build_marp.mjs   # 独立构建样张与字体、图片资源
+scripts/build_marp.mjs   # 原地构建、原生监听预览，以及网站双比例渲染 API
 scripts/prepare_marp_fonts.py # 字体维护工具，日常构建不运行
 examples/                # 通用内容排版样张与图片
 fonts/marp/              # WOFF2、font.css、来源与 OFL
@@ -30,10 +30,11 @@ tests/                   # 独立配色、语法、渲染与字体验证
 
 ```sh
 npm ci
-npm run build            # 默认会清空 dist/，修改源文件后重新生成
+npm run build            # 只更新主题文件，不清空 dist/ 或删除 Marp 产物
 npm run check            # 生成结果与来源一致，必要对比度通过
 npm test                 # 真实分词、SVG ID、字体哈希、无依赖导出
-npm run marp             # 生成两种比例的 Cinderfolio-Marp 使用演示
+npm run marp             # 从 examples/marp.md 生成同目录 marp.html
+npm run marp-preview     # 同一示例的原生实时预览
 npm pack --dry-run       # 检查分发清单；不发布 npm 包
 ```
 
@@ -42,6 +43,8 @@ GitHub Actions 使用 Node.js 24 执行以上验证，不发布 npm 包或网站
 颜色调整从 `palette.mjs` 开始，适配器只引用职责，不复制种子。修改适配器后分别检查亮暗主题、默认与自定义种子；修改 Shiki scope 需以真实语法验证，修改 Marp 排版需对照两种比例。`dist/` 与 `node_modules/` 均不提交。
 
 ## Marp 排版与渲染
+
+半页背景图 `bg left / bg right` 及其宽度比例改变原生正文区域，与当前固定标题、贯穿品牌线和页眉页脚尚未完整适配。图文混排使用 `cf-cols / cf-col`；此处记录限制，不覆盖 Marp 内部生成的布局规则。
 
 `marp.mjs` 提供同一份自包含 CSS，含 Pele 的 18 个颜色变量、实底字色和 Shiki 字形。按颜色变量、画布、基础内容、媒体、布局工具、页眉页脚、页面预设、Pele 共用规则排列；各版式的 4:3 差异紧跟对应默认值。16:9 为 1280×720，4:3 为 960×720。通过 Marp 原生 `data-size` 选择间距，字体与颜色共用；浏览器窗口大小不改变比例。
 
@@ -184,7 +187,7 @@ _footer: ""
 
 `marp-engine.mjs` 使用 CLI 异步 `engine` 扩展：`mermaid` 围栏交给 Pele，其他围栏交给 Shiki，保留 Marp 原生代码自动缩放。Pele 的布局参数 `maxWidth: 1120` 保持不变，最终显示宽度仍适配所在栏。内置语言仅构建时加载，未知语言按纯文本转义。Shiki 调用同一份 `createShikiTheme(..., { variables: true })`，亮暗字形相同，颜色由 `light-dark()` 选择。生成 HTML 不再加载两个渲染库。
 
-每图以 Markdown 行号生成稳定的 `idPrefix`，Pele 同步处理真实 ID 与可访问性引用；图内 `data-id` 可重复，不做字符串替换。测试验证重复图表的 ID 唯一、引用归属和渲染稳定。`buildMarpExample()` 只输出通用 HTML 与资源，不包含状态存储或页面组件脚本。
+每图以 Markdown 行号生成稳定的 `idPrefix`，Pele 同步处理真实 ID 与可访问性引用；图内 `data-id` 可重复，不做字符串替换。测试验证重复图表的 ID 唯一、引用归属和渲染稳定。`buildMarp(input)` 在源文件旁输出 HTML，沿用文稿比例和素材路径。字体声明合入临时主题 CSS，引用安装目录内的 WOFF2；因此 Marp 原生 watch 重建后也保留字体，无需事后修改 HTML。`npm run marp-preview` 使用原生 `--preview / --watch`；`--no-open` 仅监听，不额外启动浏览器。保存 Markdown 自动刷新，修改生成器或引擎后重启。`buildMarpExample(output, { fontDirectory })` 保留 example.html / example-4-3.html，网站负责资源打包及状态同步。
 
 标注块由构建期依赖 [`@mdit/plugin-alert`](https://mdit-plugins.github.io/alert.html) 解析，锁定兼容 Node.js 20 与 Markdown-it 14 的 0.23.2。`deep: true` 允许在分栏、列表和引用中使用；正文保留 Markdown 解析，代码围栏不转换。沿用 GitHub 的五种标记与 `.markdown-alert-*` 类名，不增加折叠或自定义标记。
 
@@ -204,7 +207,7 @@ _footer: ""
 
 正文与图表用 `Inter, "Noto Sans SC"`，代码用 `"Sarasa Mono SC"`。当前固定版本为 Noto Sans SC 2.004、Inter 4.1、Sarasa Mono SC 1.0.42。中文按 Latin、GB2312 常用字和扩展字分片，保留原字体字符映射；Inter / Noto 保留可变字重，代码有常规、粗体、斜体和粗斜体。`font.css` 只引用同级 WOFF2，不使用系统 `local()`。
 
-日常构建直接复制资源，不下载或重制字体。仅升级字体时准备官方字体、三份 OFL 和 `sources.json`（每个来源的 `url / sha256 / bytes`），再运行：
+日常构建使用现有本地字体，不下载或重制字体。仅升级字体时准备官方字体、三份 OFL 和 `sources.json`（每个来源的 `url / sha256 / bytes`），再运行：
 
 ```sh
 python3 -m venv .venv
@@ -213,7 +216,7 @@ python3 -m venv .venv
 node --test tests/marp.test.mjs
 ```
 
-核对 `fonts/marp/SOURCE.json` 中的版本、来源与哈希，保留三份 OFL；示例照片的授权来源独立记录于 `examples/assets/SOURCE.json`。图片和字体不改授 MIT。复制 HTML 时保留同级 `fonts/`、`assets/` 与许可证。
+核对 `fonts/marp/SOURCE.json` 中的版本、来源与哈希，保留三份 OFL；示例照片的授权来源独立记录于 `examples/assets/SOURCE.json`。图片和字体不改授 MIT。普通构建只输出 HTML，不复制素材；分享时保留资源路径及相应许可证。网站展示需要的字体、示例图片和许可证，由使用方构建脚本复制到发布目录。
 
 ## 灰阶与品牌色规则
 

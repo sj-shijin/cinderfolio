@@ -51,15 +51,14 @@ Cinderfolio
 git clone --depth 1 https://github.com/sj-shijin/cinderfolio.git
 cd cinderfolio
 npm ci
-npm run build
-npm run marp
+npm run marp-preview
 ```
 
-编辑 `examples/marp.md` 后，重新运行 `npm run marp`。
+编辑已有的 `examples/marp.md`，保存后自动刷新。
 
-打开 `dist/marp/example.html`；分享时复制整个 `dist/marp/`。
+仅构建：`npm run marp`，输出 `examples/marp.html`。
 
-<!-- npm ci 使用独立锁文件安装 Marp CLI、Pele、Shiki。构建脚本加载 marp-engine.mjs，复制本地字体和图片，同时生成 example.html 与 example-4-3.html。这里复现默认配色、字体和渲染；网页调色器及同源状态同步由网站另外接入。资源中包含各自许可证。CLI 扩展入口：https://github.com/marp-team/marp-cli#engine -->
+<!-- npm ci 安装锁定的 Marp CLI、Pele、Shiki。marp-preview 复用原生 watch / preview，--no-open 可只监听；文稿在原目录输出 HTML，素材不移动，字体引用 Cinderfolio 本地文件。网页双比例示例、资源打包与同源状态同步由网站另外接入。CLI 扩展入口：https://github.com/marp-team/marp-cli#engine -->
 
 ---
 
@@ -863,9 +862,9 @@ flowchart LR
 
 `figure` 与 `figcaption` 是原生 HTML；不需要图注时可直接放图片。
 
-背景图用 `![bg](图片路径)`；`fit` 完整显示，`cover` 填满。
+<small>`bg left / right` 半页背景尚未完整适配；图文混排建议使用 `cf-cols`。</small>
 
-<!-- 图片按原始比例缩放，主题只限制最大宽度，不设置全局高度上限；作者需控制一页内图片的合计高度。两个示例照片的作者、许可和来源见 assets/SOURCE.json。参考：https://marpit.marp.app/image-syntax -->
+<!-- 完整背景图使用 ![bg](图片路径)，fit 完整显示，cover 填满。图片按原始比例缩放，主题只限制最大宽度，不设置全局高度上限；作者需控制一页内图片的合计高度。两个示例照片的作者、许可和来源见 assets/SOURCE.json。参考：https://marpit.marp.app/image-syntax -->
 
 ---
 
