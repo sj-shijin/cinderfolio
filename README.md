@@ -114,21 +114,26 @@ const { svg } = await mermaid.render('diagram-id', source);
 ## Marp
 
 ```sh
-npm ci                # 安装锁定依赖
-npm run marp-preview  # 构建现有示例并打开实时预览；Ctrl+C 停止
-npm run marp          # 只构建 examples/marp.html
-npm test              # 配色、语法与 Marp 渲染测试
+npm ci        # 安装锁定依赖
+npm run marp  # 一次性构建 examples/marp.html，完成后退出
 ```
 
 `examples/marp.md` 是 Cinderfolio-Marp 使用演示，分为快速开始、特性展示、标准 Markdown、扩展 Markdown、原生 Marp 五章。核心语法与渲染效果对照展示；表格、删除线、高亮、上下标、公式、Pele 图表与标注块放在扩展章；文档与单页配置、图片尺寸、分步列表放在原生 Marp 章。任务列表与脚注仅列写法，尚未启用。
 
-默认源文件是仓库已有的 `examples/marp.md`，HTML 生成在它旁边。修改并保存这份 Markdown，预览自动重新构建、刷新；比例跟随文稿里的 `size`。字体固定为 Inter、Noto Sans SC、Sarasa Mono SC，直接引用仓库内的 WOFF2。
+默认源文件是仓库已有的 `examples/marp.md`，HTML 生成在它旁边，可在浏览器中打开。修改文稿后重新运行 `npm run marp`；比例跟随文稿里的 `size`。字体固定为 Inter、Noto Sans SC、Sarasa Mono SC，直接引用仓库内的 WOFF2。
 
-实时预览复用 [Marp CLI 原生 watch / preview](https://github.com/marp-team/marp-cli#watch-mode)。自动打开窗口需要本机已安装 Chrome、Edge 或 Firefox；也可只启动监听，再用自己的浏览器打开 HTML：
+编辑时可选用 [Marp CLI 原生 watch / preview](https://github.com/marp-team/marp-cli#watch-mode)，保存 Markdown 后自动重建并刷新页面。自动打开窗口需要本机已安装 Chrome、Edge 或 Firefox：
 
 ```sh
-npm run marp-preview -- --no-open
+npm run marp-preview              # 持续监听，并打开预览窗口
+npm run marp-preview -- --no-open  # 持续监听，自行在浏览器中打开 HTML
 ```
+
+预览命令会持续运行，在终端按 `Ctrl+C` 停止。通过 AI 助手启动时，应报告进程是否仍在运行及停止方式；环境回收后台任务后，HTML 仍可打开，但不再自动刷新。
+
+需要交付 HTML 时，先停止监听，再运行 `npm run marp`，生成不带自动刷新连接的版本。
+
+构建验收检查 HTML 已生成、翻页正常、字体与图片加载成功，以及影响渲染的控制台错误。验证自动刷新时，应实际打开 HTML，临时修改并保存文稿，确认页面无需手动刷新就更新，随后恢复修改。无法访问浏览器时，如实说明已验证和未验证的部分；示例页数等回归检查由 `npm test` 维护。
 
 监听范围是 Markdown 和本次生成的主题 CSS；单独替换图片后手动刷新，修改主题生成器或渲染引擎后重启预览。`npm run build` 只更新主题文件，不删除 `dist/marp/` 等其他内容。
 

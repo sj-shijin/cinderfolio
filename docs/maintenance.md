@@ -34,9 +34,10 @@ npm run build            # 只更新主题文件，不清空 dist/ 或删除 Mar
 npm run check            # 生成结果与来源一致，必要对比度通过
 npm test                 # 真实分词、SVG ID、字体哈希、无依赖导出
 npm run marp             # 从 examples/marp.md 生成同目录 marp.html
-npm run marp-preview     # 同一示例的原生实时预览
 npm pack --dry-run       # 检查分发清单；不发布 npm 包
 ```
+
+交互编辑可运行 `npm run marp-preview`（不打开窗口时加 `-- --no-open`），在终端按 `Ctrl+C` 停止。它会持续监听，不属于上述一次性验收；交付前停止监听，再运行 `npm run marp`。
 
 GitHub Actions 使用 Node.js 24 执行以上验证，不发布 npm 包或网站。使用方通过子模块固定提交；更新时先推送本仓库，再更新使用方的子模块指针。
 

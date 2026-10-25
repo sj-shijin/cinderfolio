@@ -51,14 +51,14 @@ Cinderfolio
 git clone --depth 1 https://github.com/sj-shijin/cinderfolio.git
 cd cinderfolio
 npm ci
-npm run marp-preview
+npm run marp
 ```
 
-编辑已有的 `examples/marp.md`，保存后自动刷新。
+打开 `examples/marp.html` 查看示例。
 
-仅构建：`npm run marp`，输出 `examples/marp.html`。
+编辑时可用 `npm run marp-preview`，保存后自动刷新。
 
-<!-- npm ci 安装锁定的 Marp CLI、Pele、Shiki。marp-preview 复用原生 watch / preview，--no-open 可只监听；文稿在原目录输出 HTML，素材不移动，字体引用 Cinderfolio 本地文件。网页双比例示例、资源打包与同源状态同步由网站另外接入。CLI 扩展入口：https://github.com/marp-team/marp-cli#engine -->
+<!-- npm ci 安装锁定的 Marp CLI、Pele、Shiki。marp 一次性构建后退出；可选的 marp-preview 复用原生 watch / preview，--no-open 可只监听，Ctrl+C 停止。交付前停止监听，再运行 marp。文稿在原目录输出 HTML，素材不移动，字体引用 Cinderfolio 本地文件。网页双比例示例、资源打包与同源状态同步由网站另外接入。CLI 扩展入口：https://github.com/marp-team/marp-cli#engine -->
 
 ---
 
