@@ -105,8 +105,7 @@ const artifacts = {
 
 // --check 只核对产物与来源一致，并重新检查实际使用组合的对比度。
 if (!values.check) {
-  // 默认 dist 完全由本生成器维护；重建时移除旧文件名。
-  if (!values['out-dir']) await fs.rm(output, { recursive: true, force: true });
+  // 只更新下列主题产物；保留 Marp 演示、预览及使用方的其他文件。
   await fs.mkdir(output, { recursive: true });
 }
 for (const [name, content] of Object.entries(artifacts)) {

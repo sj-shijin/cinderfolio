@@ -64,6 +64,15 @@ test('无 node_modules 时仍可独立导出所有主题，分发产物带有 MI
       assert.equal(theme.tokenColors.length, 7);
     }
     execFileSync(process.execPath, [...command, '--check']);
+    // 默认构建也只能更新主题；已生成的演示和其他文件必须保留。
+    const defaultOutput = path.join(root, 'dist');
+    await fs.mkdir(path.join(defaultOutput, 'marp'), { recursive: true });
+    await fs.writeFile(path.join(defaultOutput, 'marp', 'example.html'), '保留演示');
+    await fs.writeFile(path.join(defaultOutput, 'keep.txt'), '保留其他文件');
+    execFileSync(process.execPath, [path.join(root, 'build.mjs')]);
+    assert.equal(await fs.readFile(path.join(defaultOutput, 'marp', 'example.html'), 'utf8'), '保留演示');
+    assert.equal(await fs.readFile(path.join(defaultOutput, 'keep.txt'), 'utf8'), '保留其他文件');
+    assert.equal(await fs.readFile(path.join(defaultOutput, 'cf-marp.css'), 'utf8'), createMarpCss());
   } finally {
     await fs.rm(root, { recursive: true, force: true });
   }
