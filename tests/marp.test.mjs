@@ -109,7 +109,7 @@ test('两种 size 共用封面与过渡页预设，正文分页与章节跳转�
     const tree = parser.parse(html);
     const slides = elements(tree, node => node.tagName === 'section' && node.properties?.id);
     const canvases = elements(tree, node => node.tagName === 'svg' && node.properties?.dataMarpitSvg !== undefined);
-    assert.equal(slides.length, 26);
+    assert.equal(slides.length, 27);
     assert.equal(canvases.length, slides.length);
     assert.ok(slides.every(slide => slide.properties.dataSize === size));
     assert.ok(canvases.every(svg => svg.properties.viewBox === `0 0 ${width} 720`));
@@ -122,21 +122,21 @@ test('两种 size 共用封面与过渡页预设，正文分页与章节跳转�
     assert.deepEqual(coverTitle.children.filter(node => node.tagName).map(node => node.tagName), ['small']);
     assert.ok(body.every(slide => !slide.properties.className?.includes('cover')));
     assert.ok(body.every(slide => slide.children.filter(node => node.tagName === 'h2').length === 1));
-    assert.deepEqual(body.map(slide => slide.properties.dataMarpitPagination), Array.from({ length: 25 }, (_, i) => String(i + 1)));
-    assert.ok(body.every(slide => slide.properties.dataMarpitPaginationTotal === '25'));
+    assert.deepEqual(body.map(slide => slide.properties.dataMarpitPagination), Array.from({ length: 26 }, (_, i) => String(i + 1)));
+    assert.ok(body.every(slide => slide.properties.dataMarpitPaginationTotal === '26'));
     // compact 只作用于指定页，不泄漏到相邻的普通正文和过渡页。
     assert.deepEqual(slides.filter(slide => slide.properties.className?.includes('compact'))
-      .map(slide => slide.properties.id), ['7', '8', '11', '12', '13', '15', '16', '17', '18', '19', '20', '22', '23', '24', '26']);
+      .map(slide => slide.properties.id), ['7', '8', '11', '12', '13', '15', '16', '17', '18', '19', '20', '21', '23', '24', '25', '27']);
     const compact = slides[6];
     assert.equal(elements(compact, node => node.properties?.className?.includes('cf-cols')).length, 1);
     assert.equal(elements(compact, node => node.properties?.className?.includes('cf-col')).length, 2);
     const transitions = slides.filter(slide => slide.properties.className?.includes('transition'));
-    assert.deepEqual(transitions.map(slide => slide.properties.id), ['2', '5', '10', '14', '21']);
+    assert.deepEqual(transitions.map(slide => slide.properties.id), ['2', '5', '10', '14', '22']);
     for (const transition of transitions) {
       assert.deepEqual(transition.children.filter(node => node.tagName && !['header', 'footer'].includes(node.tagName))
         .map(node => node.tagName), ['p', 'h2', 'p']);
     }
-    const chapters = { '#2': '快速开始', '#5': '特性展示', '#10': '标准 Markdown', '#14': '扩展 Markdown', '#21': '原生 Marp' };
+    const chapters = { '#2': '快速开始', '#5': '特性展示', '#10': '标准 Markdown', '#14': '扩展 Markdown', '#22': '原生 Marp' };
     for (const header of elements(tree, node => node.tagName === 'header')) {
       const links = elements(header, node => node.tagName === 'a');
       assert.deepEqual(links.map(link => link.properties.href), Object.keys(chapters));

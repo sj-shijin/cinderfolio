@@ -8,7 +8,7 @@ lang: zh-CN
 paginate: true
 title: Cinderfolio-Marp
 description: Cinderfolio-Marp 快速开始、特性展示、标准 Markdown、扩展 Markdown 与原生 Marp 使用演示。
-header: '**[快速开始](#2)** [特性展示](#5) [标准 Markdown](#10) [扩展 Markdown](#14) [原生 Marp](#21)'
+header: '**[快速开始](#2)** [特性展示](#5) [标准 Markdown](#10) [扩展 Markdown](#14) [原生 Marp](#22)'
 footer: Cinderfolio-Marp
 ---
 
@@ -81,7 +81,7 @@ npm run marp
 
 ---
 
-<!-- header: '[快速开始](#2) **[特性展示](#5)** [标准 Markdown](#10) [扩展 Markdown](#14) [原生 Marp](#21)' -->
+<!-- header: '[快速开始](#2) **[特性展示](#5)** [标准 Markdown](#10) [扩展 Markdown](#14) [原生 Marp](#22)' -->
 <!-- _class: transition -->
 
 02
@@ -272,7 +272,7 @@ flowchart TD
 
 ---
 
-<!-- header: '[快速开始](#2) [特性展示](#5) **[标准 Markdown](#10)** [扩展 Markdown](#14) [原生 Marp](#21)' -->
+<!-- header: '[快速开始](#2) [特性展示](#5) **[标准 Markdown](#10)** [扩展 Markdown](#14) [原生 Marp](#22)' -->
 <!-- _class: transition -->
 
 03
@@ -408,7 +408,7 @@ print("Cinderfolio")
 
 ---
 
-<!-- header: '[快速开始](#2) [特性展示](#5) [标准 Markdown](#10) **[扩展 Markdown](#14)** [原生 Marp](#21)' -->
+<!-- header: '[快速开始](#2) [特性展示](#5) [标准 Markdown](#10) **[扩展 Markdown](#14)** [原生 Marp](#22)' -->
 <!-- _class: transition -->
 
 04
@@ -505,6 +505,84 @@ $$
 `$…$` 用于行内，`$$…$$` 用于独立公式。
 
 <!-- 数学语法属于 Markdown 扩展，Marp Core 内置支持。本例通过 math: mathjax 选择 MathJax，也可选择 katex；不在浏览器重复加载网站公式组件。参考：https://github.com/marp-team/marp-core/tree/v4#math-typesetting -->
+
+---
+
+<!-- _class: compact -->
+
+## 论文式伪代码
+
+<div class="cf-cols">
+
+<div class="cf-col">
+
+### 写法
+
+````markdown
+```pseudocode
+\begin{algorithm}
+\caption{Quicksort}
+\begin{algorithmic}
+\PROCEDURE{Quicksort}{$A, p, r$}
+  \IF{$p < r$}
+    \STATE $q = $ \CALL{Partition}{$A, p, r$}
+    \STATE \CALL{Quicksort}{$A, p, q - 1$}
+    \STATE \CALL{Quicksort}{$A, q + 1, r$}
+  \ENDIF
+\ENDPROCEDURE
+\end{algorithmic}
+\end{algorithm}
+```
+````
+
+</div>
+<div class="cf-col">
+
+### 效果
+
+```pseudocode
+\begin{algorithm}
+\caption{Quicksort}
+\begin{algorithmic}
+\PROCEDURE{Quicksort}{$A, p, r$}
+  \IF{$p < r$}
+    \STATE $q = $ \CALL{Partition}{$A, p, r$}
+    \STATE \CALL{Quicksort}{$A, p, q - 1$}
+    \STATE \CALL{Quicksort}{$A, q + 1, r$}
+  \ENDIF
+\ENDPROCEDURE
+\end{algorithmic}
+\end{algorithm}
+```
+
+</div>
+</div>
+
+<!-- 本页摘取 pseudocode.js 官方快速排序示例中的 Quicksort 过程，Partition 的完整写法见网站的 Cinderfolio-Pseudocode 页面。省略 math 选项时跟随文稿的 math: mathjax，也可用 math=katex 显式覆盖；默认显示行号、隐藏结束行、显示缩进竖线。算法字号与行距独立于 Marp 正文和 compact 设置，源码与渲染结果保持一致。官方示例来源：https://saswat.padhi.me/pseudocode.js/
+
+The MIT License (MIT)
+
+Copyright (c) 2020-2023 Saswat Padhi (saswat.sourav@gmail.com)
+Copyright (c) 2015-2019 Tate Tian (tatetian@gmail.com)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
 
 ---
 
@@ -667,7 +745,7 @@ flowchart TD
 
 ---
 
-<!-- header: '[快速开始](#2) [特性展示](#5) [标准 Markdown](#10) [扩展 Markdown](#14) **[原生 Marp](#21)**' -->
+<!-- header: '[快速开始](#2) [特性展示](#5) [标准 Markdown](#10) [扩展 Markdown](#14) **[原生 Marp](#22)**' -->
 <!-- _class: transition -->
 
 05
@@ -718,7 +796,7 @@ header: >
   [特性展示](#5)
   [标准 Markdown](#10)
   [扩展 Markdown](#14)
-  **[原生 Marp](#21)**
+  **[原生 Marp](#22)**
 footer: Cinderfolio · 作者
 -->
 ```
