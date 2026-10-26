@@ -43,16 +43,13 @@ test('算法默认跟随 Marp 文稿的公式引擎，围栏可以显式覆盖',
     }
   }
 });
-test('Marp 围栏默认隐藏结束行并显示缩进竖线，也支持显式覆盖', () => {
+test('Marp 围栏将排版开关传给伪代码渲染器', () => {
   const algorithm = String.raw`\begin{algorithmic}
 \IF{$p < r$}\STATE $q \gets p$\ENDIF
 \end{algorithmic}`;
-  const compact = marp.render('```pseudocode\n' + algorithm + '\n```').html;
-  assert.doesNotMatch(compact, /end if/);
-  assert.match(compact, /with-scopelines/);
-  const official = marp.render('```pseudocode noEnd=false scopeLines=false\n' + algorithm + '\n```').html;
-  assert.match(official, /end if/);
-  assert.doesNotMatch(official, /with-scopelines/);
+  const { html } = marp.render('```pseudocode noEnd=false scopeLines=false\n' + algorithm + '\n```');
+  assert.match(html, /end if/);
+  assert.doesNotMatch(html, /with-scopelines/);
 });
 before(async () => {
   // 与 CLI 一致，保留 Marp 默认的安全 HTML 允许列表。
@@ -64,7 +61,7 @@ function elements(node, match) {
   return [node, ...(node.children || []).flatMap(child => elements(child, match))].filter(match);
 }
 
-test('正式引擎编译使用演示，保留 Pele、Shiki 高亮、代码缩放与自动亮暗', async () => {
+test('正式使用演示可编译，主题渲染、章节链接和分发资源完整', async () => {
   const css = createMarpCss();
   assert.doesNotMatch(css, /@import|--rp-|rp-dark|\.hljs-/);
   const result = marp.render(await fs.readFile(new URL('../examples/marp.md', import.meta.url), 'utf8'));
@@ -72,13 +69,9 @@ test('正式引擎编译使用演示，保留 Pele、Shiki 高亮、代码缩放
   const slides = elements(tree, node => node.tagName === 'section' && node.properties?.id);
   assert.equal(slides.length, result.comments.length);
   assert.ok(result.comments.every(notes => notes.length > 0));
-  assert.equal(elements(tree, node => node.properties?.className?.includes('pele')).length, 3);
-  const code = elements(tree, node => node.tagName === 'pre' && node.properties?.className?.includes('shiki'))
-    .filter(block => elements(block, node => node.type === 'text' && node.value.includes('slideTitle')).length);
-  assert.equal(code.length, 1);
-  assert.equal(code[0].properties.dataAutoScaling, 'downscale-only');
-  assert.ok(elements(code[0], node => node.properties?.style?.includes('var(--cf-accent-darker)')).length > 0);
-  assert.ok(elements(code[0], node => node.properties?.style?.includes('--shiki-light-font-style:italic')).length > 0);
+  const code = elements(tree, node => node.tagName === 'pre' && node.properties?.className?.includes('shiki'));
+  assert.ok(code.length > 0);
+  assert.ok(code.every(block => block.properties.dataAutoScaling === 'downscale-only'));
   assert.match(result.css, /prefers-color-scheme:\s*dark/);
   assert.match(result.css, /--cf-background:\s*#fafaf8/);
   assert.match(result.css, /--cf-background:\s*#121212/);
@@ -88,6 +81,7 @@ test('正式引擎编译使用演示，保留 Pele、Shiki 高亮、代码缩放
   assert.ok(result.css.includes(marpFonts.text));
   assert.ok(result.css.includes(marpFonts.code));
   const diagrams = elements(tree, node => node.tagName === 'svg' && node.properties?.className?.includes('pele'));
+  assert.ok(diagrams.length > 0);
   assert.ok(diagrams.every(svg => svg.properties.style.includes(marpFonts.text)
     && svg.properties.style.includes(marpFonts.code)));
   const flowchart = diagrams.find(svg => svg.properties.className.includes('pele-flowchart'));
@@ -100,16 +94,50 @@ test('正式引擎编译使用演示，保留 Pele、Shiki 高亮、代码缩放
   // 当前亮暗主题共用字形，CSS 只需读取一套字形变量；颜色仍分别计算。
   const styles = mode => createShikiTheme(undefined, mode).tokenColors.map(rule => rule.settings.fontStyle);
   assert.deepEqual(styles('light'), styles('dark'));
+
+  // 演示允许增删和重排页面，但页眉中的章节链接必须仍指向同名过渡页。
+  const headers = elements(tree, node => node.tagName === 'header');
+  assert.ok(headers.length > 0);
+  for (const header of headers) {
+    const links = elements(header, node => node.tagName === 'a');
+    assert.ok(links.length > 0);
+    for (const link of links) {
+      const slide = slides.find(item => `#${item.properties.id}` === link.properties.href);
+      assert.ok(slide?.properties.className?.includes('transition'), link.properties.href);
+      const title = elements(slide, node => node.tagName === 'h2')[0];
+      const text = node => elements(node, child => child.type === 'text').map(child => child.value).join('');
+      assert.equal(text(link), text(title));
+    }
+  }
+  for (const tag of ['mjx-container', 'img']) assert.ok(elements(tree, node => node.tagName === tag).length, tag);
+  assert.ok(elements(tree, node => node.properties?.className?.includes('cf-pseudocode')).length > 0);
+  const directory = new URL('../examples/assets/', import.meta.url);
+  const assets = JSON.parse(await fs.readFile(new URL('SOURCE.json', directory), 'utf8'));
+  for (const asset of assets) {
+    assert.ok(result.html.includes(`./assets/${asset.file}`));
+    const bytes = await fs.readFile(new URL(asset.file, directory));
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), asset.sha256);
+    assert.ok(asset.author && asset.source && asset.license);
+  }
 });
 
-test('两种 size 共用封面与过渡页预设，正文分页与章节跳转保持对应', async () => {
-  const source = await fs.readFile(new URL('../examples/marp.md', import.meta.url), 'utf8');
+test('两种 size 共用封面与过渡页预设，正文分页与章节跳转保持对应', () => {
+  // 用固定小文稿验证指令作用域，不依赖正式演示的篇幅和顺序。
+  const pages = [
+    '<!-- _class: cover -->\n<!-- _paginate: skip -->\n<!-- _header: "" -->\n<!-- _footer: "" -->\n\n# 测试文稿 <small>副标题</small>',
+    '<!-- _class: transition -->\n\n01\n\n## 第一章\n\n第一章导语。',
+    '<!-- _class: compact -->\n\n## 紧凑正文\n\n内容。',
+    '<!-- _class: transition -->\n\n02\n\n## 第二章\n\n第二章导语。',
+    '## 常规正文\n\n内容。',
+  ];
+  const chapters = { '#2': '第一章', '#4': '第二章' };
   for (const [size, width] of [['16:9', 1280], ['4:3', 960]]) {
-    const { html } = marp.render(source.replace(/^size: 16:9$/m, `size: ${size}`));
+    const source = `---\ntheme: cinderfolio\nsize: ${size}\npaginate: true\nheader: '[第一章](#2) [第二章](#4)'\nfooter: 测试\n---\n\n${pages.join('\n\n---\n\n')}`;
+    const { html } = marp.render(source);
     const tree = parser.parse(html);
     const slides = elements(tree, node => node.tagName === 'section' && node.properties?.id);
     const canvases = elements(tree, node => node.tagName === 'svg' && node.properties?.dataMarpitSvg !== undefined);
-    assert.equal(slides.length, 27);
+    assert.equal(slides.length, pages.length);
     assert.equal(canvases.length, slides.length);
     assert.ok(slides.every(slide => slide.properties.dataSize === size));
     assert.ok(canvases.every(svg => svg.properties.viewBox === `0 0 ${width} 720`));
@@ -122,22 +150,20 @@ test('两种 size 共用封面与过渡页预设，正文分页与章节跳转�
     assert.deepEqual(coverTitle.children.filter(node => node.tagName).map(node => node.tagName), ['small']);
     assert.ok(body.every(slide => !slide.properties.className?.includes('cover')));
     assert.ok(body.every(slide => slide.children.filter(node => node.tagName === 'h2').length === 1));
-    assert.deepEqual(body.map(slide => slide.properties.dataMarpitPagination), Array.from({ length: 26 }, (_, i) => String(i + 1)));
-    assert.ok(body.every(slide => slide.properties.dataMarpitPaginationTotal === '26'));
+    assert.deepEqual(body.map(slide => slide.properties.dataMarpitPagination), ['1', '2', '3', '4']);
+    assert.ok(body.every(slide => slide.properties.dataMarpitPaginationTotal === '4'));
     // compact 只作用于指定页，不泄漏到相邻的普通正文和过渡页。
     assert.deepEqual(slides.filter(slide => slide.properties.className?.includes('compact'))
-      .map(slide => slide.properties.id), ['7', '8', '11', '12', '13', '15', '16', '17', '18', '19', '20', '21', '23', '24', '25', '27']);
-    const compact = slides[6];
-    assert.equal(elements(compact, node => node.properties?.className?.includes('cf-cols')).length, 1);
-    assert.equal(elements(compact, node => node.properties?.className?.includes('cf-col')).length, 2);
+      .map(slide => slide.properties.id), ['3']);
     const transitions = slides.filter(slide => slide.properties.className?.includes('transition'));
-    assert.deepEqual(transitions.map(slide => slide.properties.id), ['2', '5', '10', '14', '22']);
+    assert.deepEqual(transitions.map(slide => slide.properties.id), ['2', '4']);
     for (const transition of transitions) {
       assert.deepEqual(transition.children.filter(node => node.tagName && !['header', 'footer'].includes(node.tagName))
         .map(node => node.tagName), ['p', 'h2', 'p']);
     }
-    const chapters = { '#2': '快速开始', '#5': '特性展示', '#10': '标准 Markdown', '#14': '扩展 Markdown', '#22': '原生 Marp' };
-    for (const header of elements(tree, node => node.tagName === 'header')) {
+    const headers = elements(tree, node => node.tagName === 'header');
+    assert.equal(headers.length, body.length);
+    for (const header of headers) {
       const links = elements(header, node => node.tagName === 'a');
       assert.deepEqual(links.map(link => link.properties.href), Object.keys(chapters));
       for (const link of links) {
@@ -149,43 +175,35 @@ test('两种 size 共用封面与过渡页预设，正文分页与章节跳转�
   }
 });
 
-test('使用演示保留分栏、原生内容和分步列表，图片资源可独立分发', async () => {
-  const { html } = marp.render(await fs.readFile(new URL('../examples/marp.md', import.meta.url), 'utf8'));
-  const tree = parser.parse(html);
-  for (const tag of [
-    'h1', 'h2', 'h3', 'small', 'p', 'em', 'strong', 's', 'mark', 'sup', 'sub', 'a', 'code', 'blockquote',
-    'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tr', 'th', 'td',
-    'img', 'pre', 'mjx-container', 'figure', 'figcaption', 'svg', 'header', 'footer',
-  ]) {
-    assert.ok(elements(tree, node => node.tagName === tag).length, tag);
-  }
-  assert.equal(elements(tree, node => node.properties?.dataMarpitFragment !== undefined).length, 4);
-
+test('分栏容器保留 Markdown 与局部对齐，分步列表正常输出', () => {
+  const source = [
+    '## 组合布局',
+    '<div class="cf-col cf-align-tc">\n\n**顶部说明**\n\n</div>',
+    '<div class="cf-cols">',
+    '<div class="cf-col cf-w3 cf-align-tl">\n\n```ts\nconst value: number = 1;\n```\n\n</div>',
+    '<div class="cf-col cf-w2 cf-align-mc">\n\n```mermaid\nflowchart LR\n A[输入] --> B[输出]\n```\n\n</div>',
+    '</div>',
+    '<div class="cf-col cf-align-tr">\n\n*底部说明*\n\n</div>',
+    '* 第一步\n* 第二步',
+  ].join('\n\n');
+  const tree = parser.parse(marp.render(source).html);
+  assert.equal(elements(tree, node => node.properties?.dataMarpitFragment !== undefined).length, 2);
   // 原生 HTML 容器内仍解析 Markdown，上下单栏与中间双栏保持同级。
-  const slide = elements(tree, node => node.tagName === 'section' && node.properties.id === '8')[0];
+  const [slide] = elements(tree, node => node.tagName === 'section');
   const columns = elements(slide, node => node.properties?.className?.includes('cf-cols'));
-  assert.deepEqual(slide.children.filter(node => node.tagName && !['header', 'footer'].includes(node.tagName))
-    .map(node => node.tagName), ['h2', 'div', 'div', 'div']);
+  assert.equal(columns.length, 1);
+  assert.deepEqual(slide.children.filter(node => node.tagName).map(node => node.tagName), ['h2', 'div', 'div', 'div', 'ul']);
   const singleColumns = slide.children.filter(node => node.properties?.className?.includes('cf-col'));
   assert.deepEqual(singleColumns.map(node => node.properties.className), [['cf-col', 'cf-align-tc'], ['cf-col', 'cf-align-tr']]);
+  assert.equal(elements(singleColumns[0], node => node.tagName === 'strong').length, 1);
+  assert.equal(elements(singleColumns[1], node => node.tagName === 'em').length, 1);
   const cells = columns[0].children.filter(node => node.properties?.className?.includes('cf-col'));
   assert.equal(cells.length, 2);
   assert.deepEqual(cells[0].properties.className, ['cf-col', 'cf-w3', 'cf-align-tl']);
   assert.deepEqual(cells[1].properties.className, ['cf-col', 'cf-w2', 'cf-align-mc']);
   assert.ok(elements(cells[0], node => node.tagName === 'pre').length > 0);
-  assert.equal(elements(cells[1], node => node.tagName === 'img').length, 0);
-  const alignment = elements(cells[1], node => node.properties?.className?.includes('pele-block'));
-  assert.equal(alignment.length, 1);
-  assert.equal(elements(alignment[0], node => node.tagName === 'text').length, 9);
-
-  const directory = new URL('../examples/assets/', import.meta.url);
-  const assets = JSON.parse(await fs.readFile(new URL('SOURCE.json', directory), 'utf8'));
-  for (const asset of assets) {
-    assert.ok(html.includes(`./assets/${asset.file}`));
-    const bytes = await fs.readFile(new URL(asset.file, directory));
-    assert.equal(createHash('sha256').update(bytes).digest('hex'), asset.sha256);
-    assert.ok(asset.author && asset.source && asset.license);
-  }
+  assert.equal(elements(cells[1], node => node.properties?.className?.includes('cinderfolio-pele')).length, 1);
+  assert.equal(elements(cells[1], node => node.tagName === 'svg').length, 1);
 });
 
 test('封面沿用原生 h1 / small，纯主题也保留可选副标题、手动换行与信息段落', () => {

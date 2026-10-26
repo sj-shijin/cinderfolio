@@ -14,11 +14,19 @@ before(async () => {
 });
 after(() => highlighter.dispose());
 
-function tokenAt(code, lang, mode, text) {
-  const index = code.indexOf(text);
-  assert.ok(index >= 0, text);
-  const { tokens } = highlighter.codeToTokens(code, { lang, theme: `cinderfolio-${mode}` });
-  return tokens.flat().find(token => token.offset <= index && token.offset + token.content.length > index);
+// 同一样本的多条断言共用一次分词，保留主题、语言和源码片段作为失败定位。
+function checkTokens(code, lang, mode, cases) {
+  const palette = createShikiPalette(seeds, mode);
+  const tokens = highlighter.codeToTokens(code, { lang, theme: `cinderfolio-${mode}` }).tokens.flat();
+  for (const [text, role, style] of cases) {
+    const label = `${mode}.${lang}.${text}`;
+    const index = code.indexOf(text);
+    assert.ok(index >= 0, label);
+    const token = tokens.find(item => item.offset <= index && item.offset + item.content.length > index);
+    assert.ok(token, label);
+    if (role) assert.equal(token.color.toLowerCase(), palette[role].color, label);
+    if (style !== undefined) assert.equal(token.fontStyle, style, label);
+  }
 }
 
 function checkBrackets(code, lang, mode, cases) {
@@ -79,12 +87,7 @@ test('未分类的源码使用常规端点色，局部兜底保留 C 与 Python 
     ]],
   ];
   for (const mode of ['light', 'dark']) for (const [lang, code, cases] of samples) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [text, role, style] of cases) {
-      const token = tokenAt(code, lang, mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${lang}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${lang}.${text}`);
-    }
+    checkTokens(code, lang, mode, cases);
   }
 });
 
@@ -97,20 +100,14 @@ test('通用变量、内置属性、对象键和名称标签不依赖源码粗�
     ['java', 'record Task(String title) {}\nclass Job { void run() { var pending = load(); consume(pending); } }', ['title)', 'pending =']],
   ];
   for (const mode of ['light', 'dark']) for (const [lang, code, names] of samples) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const text of names) {
-      const token = tokenAt(code, lang, mode, text);
-      assert.equal(token.color.toLowerCase(), palette.execution.color, `${mode}.${lang}.${text}`);
-      assert.equal(token.fontStyle, 2, `${mode}.${lang}.${text}`);
-    }
+    checkTokens(code, lang, mode, names.map(text => [text, 'execution', 2]));
   }
 });
 
 test('C++ 命名空间与类型使用辅助信息，函数和成员保持粗体，字面量使用常规端点色', () => {
   const code = '#include <span>\n#include "local.hpp"\n#define SCALE 2\n// explanation\nnamespace app {}\nnamespace math = app;\nusing namespace std;\nstruct Vector {};\ntemplate <std::floating_point T>\nT dot(T value) { const T result = value * 2.0f; std::cout << "result" << result; return result; }';
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [text, role, style] of [
+    checkTokens(code, 'cpp', mode, [
       ['#include', 'navigation', 2], ['#define', 'navigation', 2], ['<span', 'auxiliary', 0], ['>', 'auxiliary', 0], ['span', 'content', 0], ['SCALE', 'execution', 2],
       ['"local.hpp', 'structure', 0], ['local.hpp', 'content', 0],
       ['//', 'comment', 1], ['explanation', 'comment', 1], ['struct', 'navigation', 2],
@@ -119,36 +116,19 @@ test('C++ 命名空间与类型使用辅助信息，函数和成员保持粗体�
       ['Vector', 'auxiliary', 0], ['template', 'navigation', 2], ['floating_point', 'auxiliary', 0], ['const', 'auxiliary', 0],
       ['T dot', 'auxiliary', 0], ['T value', 'auxiliary', 0],
       ['dot', 'execution', 2], ['value', 'execution', 2],
-      ['return', 'navigation', 2], ['value *', 'execution', 2], ['*', 'execution', 2], ['2.0f', 'content', 0], ['f;', 'content', 0],
-    ]) {
-      const token = tokenAt(code, 'cpp', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
-    // 实际字面量保留端点色，与变量用字重区分；限定名不会压低后面的成员。
-    for (const text of ['2.0f', 'result"']) {
-      const token = tokenAt(code, 'cpp', mode, text);
-      assert.equal(token.color.toLowerCase(), mode === 'light' ? seeds.ink : seeds.paper, `${mode}.${text}`);
-      assert.equal(token.fontStyle, 0, `${mode}.${text}`);
-    }
+      ['return', 'navigation', 2], ['value *', 'execution', 2], ['*', 'execution', 2], ['2.0f', 'content', 0], ['f;', 'content', 0], ['result"', 'content', 0],
+    ]);
+    assert.equal(createShikiPalette(seeds, mode).content.color, mode === 'light' ? seeds.ink : seeds.paper);
   }
 });
 
 test('预处理指令统一使用流程色，连同 # 一起强调', () => {
   const code = '#include <span>\n#define LIMIT 8\n#if defined(USE_FLOAT)\nusing Scalar = float;\n#elif USE_DOUBLE\nusing Scalar = double;\n#else\nusing Scalar = int;\n#endif\n#ifdef DEBUG\n#endif\n#ifndef RELEASE\n#endif';
+  // 分别检查 # 和指令名称，避免只覆盖其中一部分。
+  const names = ['#include', '#define', '#if', '#ifdef', '#ifndef', '#elif', '#else', '#endif']
+    .flatMap(directive => [directive, directive.slice(1)]);
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const directive of ['#include', '#define', '#if', '#ifdef', '#ifndef', '#elif', '#else', '#endif']) {
-      // 分别检查 # 和指令名称，避免只覆盖其中一部分。
-      for (const text of [directive, directive.slice(1)]) {
-        const token = tokenAt(code, 'cpp', mode, text);
-        assert.equal(token.color.toLowerCase(), palette.navigation.color, `${mode}.${text}`);
-        assert.equal(token.fontStyle, 2, `${mode}.${text}`);
-      }
-    }
-    const defined = tokenAt(code, 'cpp', mode, 'defined');
-    assert.equal(defined.color.toLowerCase(), palette.navigation.color);
-    assert.equal(defined.fontStyle, 2);
+    checkTokens(code, 'cpp', mode, [...names, 'defined'].map(text => [text, 'navigation', 2]));
   }
 });
 
@@ -163,19 +143,12 @@ test('成员与导入路径的连接符使用端点粗体，命名空间名称�
     ['java', 'package com.example;\nclass A { void run() { obj.method(); double number = 1.5; } }', ['.method'], ['.example']],
   ];
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
     for (const [lang, code, accessors, qualifiers] of samples) {
-      for (const text of accessors) {
-        const token = tokenAt(code, lang, mode, text);
-        assert.equal(token.color.toLowerCase(), palette.execution.color, `${mode}.${lang}.${text}`);
-        assert.equal(token.fontStyle, 2, `${mode}.${lang}.${text}`);
-      }
-      for (const text of qualifiers) {
-        const token = tokenAt(code, lang, mode, text);
-        assert.equal(token.color.toLowerCase(), palette.structure.color, `${mode}.${lang}.${text}`);
-        assert.equal(token.fontStyle, 0, `${mode}.${lang}.${text}`);
-      }
-      assert.equal(tokenAt(code, lang, mode, '.5').fontStyle, 0, `${mode}.${lang}.小数点`);
+      checkTokens(code, lang, mode, [
+        ...accessors.map(text => [text, 'execution', 2]),
+        ...qualifiers.map(text => [text, 'structure', 0]),
+        ['.5', null, 0],
+      ]);
     }
   }
 });
@@ -273,12 +246,7 @@ test('通用结构规则不把字符串、注释和排版标记变成粗体', ()
     ['markdown', '- **strong** and *emphasis*', [['-', 'structure', 0], ['**', 'structure', 0], ['*emphasis', 'structure', 0]]],
   ];
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [lang, code, checks] of samples) for (const [text, role, style] of checks) {
-      const token = tokenAt(code, lang, mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${lang}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${lang}.${text}`);
-    }
+    for (const [lang, code, checks] of samples) checkTokens(code, lang, mode, checks);
   }
 });
 
@@ -322,19 +290,14 @@ test('模板、泛型和标签尖括号跟随类型使用辅助信息，比较�
 test('Python 保留注释斜体与数据粗体，插值边界加粗，f-string 引号使用结构细节', () => {
   const code = 'MAX_COUNT = 10\n# explanation\n@dataclass\nclass Vector:\n    def describe(self, value: float) -> str:\n        """A docstring."""\n        return f"result: {round(value) + 1:.3f}\\n" if value is not None else True';
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [text, role, style] of [
+    checkTokens(code, 'python', mode, [
       ['MAX_COUNT', 'execution', 2], ['#', 'comment', 1], ['explanation', 'comment', 1],
       ['dataclass', 'execution', 2], ['class Vector', 'navigation', 2], ['def', 'navigation', 2], ['Vector', 'execution', 2], ['describe', 'execution', 2], ['value: float', 'execution', 2],
       ['"""', 'comment', 1], ['A docstring.', 'comment', 1], ['result:', 'content', 0], ['{round', 'execution', 2],
       ['"result:', 'structure', 0], ['" if value', 'structure', 0], ['f"result:', 'content', 0],
       ['round', 'execution', 2], ['value) +', 'execution', 2], ['+', 'execution', 2], ['\\n', 'auxiliary', 0], [':.3f', 'auxiliary', 0],
       ['float', 'auxiliary', 0], ['None', 'content', 0], ['True', 'content', 0],
-    ]) {
-      const token = tokenAt(code, 'python', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    ]);
   }
 });
 
@@ -342,30 +305,21 @@ test('JS/TS 绑定声明使用辅助信息，函数与控制流保留导航色�
   const code = '// explanation\nconst items = [1, 2];\nfunction sum(values) {\n  let total = 0;\n  for (const value of values) { if (!value) continue; total += value; }\n  return total;\n}\nconst result = sum(items);\nconst label = `sum: ${result}`;\nitems[0];';
   const typed = 'interface Task { readonly id: number; }\nfunction pending(items: Task[]): Task[] { return items; }\ntype Value = Task | string;';
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
     for (const lang of ['javascript', 'typescript']) {
-      for (const [text, role, style] of [
+      checkTokens(code, lang, mode, [
         ['const', 'auxiliary', 0], ['function', 'navigation', 2], ['let', 'auxiliary', 0], ['of values', 'navigation', 2],
         ['for', 'navigation', 2], ['if', 'navigation', 2], ['return', 'navigation', 2],
         ['sum', 'execution', 2], ['values', 'execution', 2], ['items =', 'execution', 2], ['result =', 'execution', 2],
         ['!', 'execution', 2], ['+=', 'execution', 2], ['1,', 'content', 0], ['sum: ', 'content', 0],
         ['[1', 'execution', 2], ['];', 'execution', 2], ['[0', 'execution', 2],
         ['(items)', 'execution', 2], [');', 'execution', 2], ['${', 'execution', 2],
-      ]) {
-        const token = tokenAt(code, lang, mode, text);
-        assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${lang}.${text}`);
-        assert.equal(token.fontStyle, style, `${mode}.${lang}.${text}`);
-      }
+      ]);
     }
-    for (const [text, role, style] of [
+    checkTokens(typed, 'typescript', mode, [
       ['interface', 'navigation', 2], ['readonly', 'auxiliary', 0], ['Task', 'auxiliary', 0], ['number', 'auxiliary', 0],
       [': Task', 'auxiliary', 0], ['[]', 'auxiliary', 0], [']', 'auxiliary', 0],
       ['type Value', 'navigation', 2], ['Value', 'auxiliary', 0], ['|', 'auxiliary', 0], ['string', 'auxiliary', 0],
-    ]) {
-      const token = tokenAt(typed, 'typescript', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    ]);
   }
 });
 
@@ -390,15 +344,11 @@ test('修饰符与绑定声明使用类型层级，声明与异步流程保持�
       ['public', 'final', 'private', 'let'], ['class', 'func', 'async', 'await', 'return']],
   ];
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
     for (const [lang, code, modifiers, navigation] of samples) {
-      for (const [texts, role, style] of [[modifiers, 'auxiliary', 0], [navigation, 'navigation', 2]]) {
-        for (const text of texts) {
-          const token = tokenAt(code, lang, mode, text);
-          assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${lang}.${text}`);
-          assert.equal(token.fontStyle, style, `${mode}.${lang}.${text}`);
-        }
-      }
+      checkTokens(code, lang, mode, [
+        ...modifiers.map(text => [text, 'auxiliary', 0]),
+        ...navigation.map(text => [text, 'navigation', 2]),
+      ]);
     }
   }
 });
@@ -418,11 +368,8 @@ test('通用类名、继承类与库类名使用阅读主体，普通类型标�
     ['swift', 'class Task: Base { func copy() -> Task { return Task() } }', [['Task:', 'execution'], ['Base', 'execution']]],
   ];
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [lang, code, checks] of samples) for (const [text, role] of checks) {
-      const token = tokenAt(code, lang, mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${lang}.${text}`);
-      assert.equal(token.fontStyle, role === 'execution' ? 2 : 0, `${mode}.${lang}.${text}`);
+    for (const [lang, code, checks] of samples) {
+      checkTokens(code, lang, mode, checks.map(([text, role]) => [text, role, role === 'execution' ? 2 : 0]));
     }
   }
 });
@@ -434,12 +381,7 @@ test('Rust、Go 与 Java 的声明词和类型名保持不同的阅读层级', (
     ['java', 'public class Tasks { record Task(String title) {} void run() { var count = 0; } }', [['class', 'navigation', 2], ['record', 'navigation', 2], ['var', 'auxiliary', 0], ['public', 'auxiliary', 0], ['String', 'auxiliary', 0]]],
   ];
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [lang, code, checks] of samples) for (const [text, role, style] of checks) {
-      const token = tokenAt(code, lang, mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${lang}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${lang}.${text}`);
-    }
+    for (const [lang, code, checks] of samples) checkTokens(code, lang, mode, checks);
   }
 });
 
@@ -454,20 +396,14 @@ test('JSON/CSS/SCSS 的键、选择器和属性名使用阅读主体，属性值
     ]],
   ];
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [lang, code, checks] of samples) for (const [text, role, style] of checks) {
-      const token = tokenAt(code, lang, mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${lang}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${lang}.${text}`);
-    }
+    for (const [lang, code, checks] of samples) checkTokens(code, lang, mode, checks);
   }
 });
 
 test('Markdown 排版边界弱化，标题、正文强调与嵌入代码保留层次', () => {
   const code = '# Title\n\nBody **strong** and *emphasis*.\n\n> Quote\n\n[Link](https://example.com) and `code()`.\n\n![Image](preview.png) and [Reference][ref].\n\n[ref]: https://example.com\n\n~~~python\nif items:\n    print(items[0])\n~~~\n\n| Head |\n| --- |\n| Cell |';
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [text, role, style] of [
+    checkTokens(code, 'markdown', mode, [
       ['#', 'structure', 0], ['Title', 'execution', 2], ['Body', 'content', 0],
       ['strong', 'execution', 2], ['emphasis', 'comment', 1], ['**', 'structure', 0],
       ['Quote', 'content', 0], ['>', 'structure', 0], ['Link', 'content', 0],
@@ -476,28 +412,19 @@ test('Markdown 排版边界弱化，标题、正文强调与嵌入代码保留�
       ['![Image', 'structure', 0], ['Image', 'content', 0], ['(preview', 'structure', 0],
       ['[ref].', 'structure', 0], ['].\n\n[ref]', 'structure', 0], ['ref]', 'structure', 0], ['~~~', 'structure', 0], ['if items', 'navigation', 2],
       ['print', 'execution', 2], ['(items', 'execution', 2], ['[0]', 'execution', 2], ['])', 'execution', 2],
-    ]) {
-      const token = tokenAt(code, 'markdown', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    ]);
   }
 });
 
 test('HTML 标签使用常规端点色，静态属性弱化，正文、实体与注释保留各自职责', () => {
   const code = '<!-- explanation -->\n<article class="card" aria-label="Example"><h1>Title &amp; text</h1></article>';
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [text, role, style] of [
+    checkTokens(code, 'html', mode, [
       ['<!--', 'comment', 1], ['explanation', 'comment', 1], ['<article', 'auxiliary', 0],
       ['article', 'content', 0], ['h1', 'content', 0], ['class', 'auxiliary', 0], ['aria-label', 'auxiliary', 0],
       ['card', 'content', 0], ['Example', 'content', 0], ['Title', 'content', 0],
       ['&amp;', 'auxiliary', 0], ['amp;', 'auxiliary', 0], ['; text', 'auxiliary', 0],
-    ]) {
-      const token = tokenAt(code, 'html', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    ]);
   }
 });
 
@@ -544,12 +471,7 @@ Value $\alpha x_i^2$ and $f(s)$.
     ]],
   ];
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [lang, code, checks] of samples) for (const [text, role, style] of checks) {
-      const token = tokenAt(code, lang, mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${lang}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${lang}.${text}`);
-    }
+    for (const [lang, code, checks] of samples) checkTokens(code, lang, mode, checks);
   }
 });
 
@@ -602,12 +524,7 @@ test('模板语言以流程指令导航，组件属性与数据加粗，标签�
       ]]),
   ];
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [lang, code, checks] of samples) for (const [text, role, style] of checks) {
-      const token = tokenAt(code, lang, mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${lang}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${lang}.${text}`);
-    }
+    for (const [lang, code, checks] of samples) checkTokens(code, lang, mode, checks);
   }
 });
 
@@ -681,11 +598,7 @@ test('纯结构、排版与数据片段不强行分配品牌色，嵌入代码�
       assert.ok(tokens.every(token => token.color.toLowerCase() !== palette.navigation.color), `${mode}.${lang}`);
     }
     const code = '<button onclick="if (ready) complete(task)">Done</button>';
-    for (const [text, role, style] of [['onclick', 'execution', 2], ['if', 'navigation', 2], ['complete', 'execution', 2], ['Done', 'content', 0]]) {
-      const token = tokenAt(code, 'html', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    checkTokens(code, 'html', mode, [['onclick', 'execution', 2], ['if', 'navigation', 2], ['complete', 'execution', 2], ['Done', 'content', 0]]);
   }
 });
 
@@ -708,8 +621,7 @@ test('Bash 选项、分支模式和执行连接使用阅读主体，普通参数
     '# explanation',
   ].join('\n');
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [text, role, style] of [
+    checkTokens(code, 'bash', mode, [
       ['set', 'execution', 2], ['-euo', 'execution', 2], ['euo', 'execution', 2],
       ['--retry', 'execution', 2], ['retry', 'execution', 2], ['3', 'content', 0], ['pipefail', 'content', 0],
       ['&&', 'execution', 2], ['||', 'execution', 2], ['&\n', 'execution', 2],
@@ -720,11 +632,7 @@ test('Bash 选项、分支模式和执行连接使用阅读主体，普通参数
       ['>&2', 'execution', 2], ['done', 'content', 0], ['# explanation', 'comment', 1],
       // 当前语法把算术展开中的 + 当普通参数，把默认路径当变量；不按字符重新分类。
       ['+ 1', 'content', 0], ['cinderfolio/dist', 'execution', 2],
-    ]) {
-      const token = tokenAt(code, 'bash', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    ]);
   }
 });
 
@@ -742,8 +650,7 @@ test('PowerShell 声明使用导航色，数据构造使用阅读主体，常量
 filter Select-Ready { $_ }
 Get-Item a && Write-Output b || Write-Warning c`;
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [text, role, style] of [
+    checkTokens(code, 'powershell', mode, [
       ['function', 'navigation', 2], ['filter', 'navigation', 2], ['param', 'navigation', 2],
       ['Convert-Task', 'execution', 2], ['Select-Ready', 'execution', 2], ['string', 'auxiliary', 0],
       ['@{', 'execution', 2], ['@(', 'execution', 2], ['$Name', 'execution', 2],
@@ -757,11 +664,7 @@ Get-Item a && Write-Output b || Write-Warning c`;
       ['# explanation', 'comment', 1],
       // && / || 与普通分号共用标记，类型方括号和下标也无法仅靠主题区分。
       ['&&', 'structure', 0], ['||', 'structure', 0], ['; Enabled', 'structure', 0],
-    ]) {
-      const token = tokenAt(code, 'powershell', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    ]);
     checkBrackets(code, 'powershell', mode, [['[string]', 2], ['$items[0]', 2]]);
   }
 });
@@ -775,8 +678,7 @@ WHERE p.id > 0 AND p.done = FALSE
 ORDER BY pending DESC;
 CREATE TABLE tasks (id INTEGER, title TEXT);`;
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [text, role, style] of [
+    checkTokens(code, 'sql', mode, [
       ['WITH', 'navigation', 2], ['SELECT', 'navigation', 2], ['FROM', 'navigation', 2],
       ['WHERE', 'navigation', 2], ['ORDER BY', 'navigation', 2], ['DESC', 'navigation', 2],
       ['p.name', 'execution', 2], ['name,', 'execution', 2], ['id, COUNT', 'execution', 2],
@@ -786,11 +688,7 @@ CREATE TABLE tasks (id INTEGER, title TEXT);`;
       ['Cinderfolio', 'content', 0], ['1,', 'content', 0], ['--', 'comment', 1],
       // 当前语法把普通名称 name 也标为 keyword.other.sql，不按文字猜测并覆盖。
       ['name)', 'navigation', 2],
-    ]) {
-      const token = tokenAt(code, 'sql', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    ]);
   }
 });
 
@@ -805,8 +703,7 @@ else()
 endif()
 message([[literal \${NAME}]])`;
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [text, role, style] of [
+    checkTokens(code, 'cmake', mode, [
       ['cmake_minimum_required', 'navigation', 2], ['option', 'navigation', 2], ['ON)', 'navigation', 2],
       ['if(', 'navigation', 2], ['else', 'navigation', 2], ['endif', 'navigation', 2],
       ['target_compile_options', 'navigation', 2], ['MSVC', 'execution', 2], ['app', 'execution', 2],
@@ -814,11 +711,7 @@ message([[literal \${NAME}]])`;
       ['PUBLIC', 'auxiliary', 0], ['Enable warnings', 'content', 0],
       ['[[literal', 'content', 0], ['literal', 'content', 0], ['${NAME}', 'content', 0],
       ['# explanation', 'comment', 1],
-    ]) {
-      const token = tokenAt(code, 'cmake', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    ]);
   }
 });
 
@@ -831,8 +724,7 @@ COPY --from=build /export/ /app/
 EXPOSE 80
 CMD ["node", "server.js"]`;
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [text, role, style] of [
+    checkTokens(code, 'dockerfile', mode, [
       ['ARG', 'navigation', 2], ['FROM', 'navigation', 2], ['AS', 'navigation', 2],
       ['RUN', 'navigation', 2], ['COPY', 'navigation', 2], ['CMD', 'navigation', 2],
       ['NODE_VERSION=22', 'content', 0], ['node:', 'content', 0], ['${NODE_VERSION}', 'content', 0],
@@ -840,11 +732,7 @@ CMD ["node", "server.js"]`;
       ['&&', 'content', 0], ['test', 'content', 0], ['--from=build', 'content', 0],
       ['/export/', 'content', 0], ['80', 'content', 0], ['server.js', 'content', 0],
       ['# explanation', 'comment', 1],
-    ]) {
-      const token = tokenAt(code, 'dockerfile', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    ]);
   }
 });
 
@@ -865,8 +753,7 @@ $(TARGET): $(OBJECTS)
 clean:
 \t$(RM) $(TARGET) $(OBJECTS)`;
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [text, role, style] of [
+    checkTokens(code, 'make', mode, [
       ['CXX', 'execution', 2], ['?=', 'execution', 2], [':=', 'execution', 2], ['+=', 'execution', 2],
       ['c++', 'content', 0], ['-O2', 'content', 0], ['-g', 'content', 0],
       ['ifeq', 'navigation', 2], ['endif', 'navigation', 2], ['DEBUG', 'execution', 2],
@@ -875,11 +762,7 @@ clean:
       ['$(CXX)', 'execution', 2], ['-c', 'execution', 2], ['$<', 'execution', 2], ['$@', 'execution', 2],
       ['$(TARGET):', 'execution', 2], ['$(OBJECTS)', 'execution', 2], ['clean:', 'execution', 2],
       ['# explanation', 'comment', 1], [',%.o', 'structure', 0],
-    ]) {
-      const token = tokenAt(code, 'make', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    ]);
   }
 });
 
@@ -907,120 +790,85 @@ ${comment}
 test('TS 类型箭头、可选属性与 satisfies 使用辅助信息，运行时箭头和可选链保持原层级', () => {
   const code = 'type Handler = (id: number) => void;\ninterface Task { done?: boolean }\nconst id = task?.id;\nconst task = value satisfies Task;\nconst result = items.map(x => x + 1);';
   for (const mode of ['light', 'dark']) for (const lang of ['typescript', 'tsx']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [text, role, style] of [
+    checkTokens(code, lang, mode, [
       ['=> void', 'auxiliary', 0], ['?: boolean', 'auxiliary', 0], ['satisfies', 'auxiliary', 0],
       ['?.id', 'execution', 2], ['=> x', 'navigation', 2], ['type Handler', 'navigation', 2],
-    ]) {
-      const token = tokenAt(code, lang, mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${lang}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${lang}.${text}`);
-    }
+    ]);
   }
 });
 
 test('C++ 声明属性使用辅助信息，lambda 捕获和下标保持阅读主体', () => {
   const code = '[[nodiscard]] int read() { return 1; }\nconst auto run = [&data](int i) { return data[i]; };';
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [text, role, style] of [
+    checkTokens(code, 'cpp', mode, [
       ['[[', 'auxiliary', 0], ['nodiscard', 'auxiliary', 0], [']]', 'auxiliary', 0],
       ['[&data]', 'execution', 2], ['[i]', 'execution', 2], ['read()', 'execution', 2],
       ['return', 'navigation', 2],
-    ]) {
-      const token = tokenAt(code, 'cpp', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    ]);
   }
 });
 
 test('Rust 分支和提前返回使用导航色，返回类型箭头使用辅助信息，结果变体保持阅读主体', () => {
   const code = 'fn choose(x: Option<i32>) -> Result<i32, String> {\n  let value = x.ok_or("missing")?;\n  match x { Some(n) => Ok(n), None => Err("missing?".into()) }\n}\nlet comma = \',\';';
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [text, role, style] of [
+    checkTokens(code, 'rust', mode, [
       ['Some', 'execution', 2], ['None', 'execution', 2], ['Ok', 'execution', 2], ['Err', 'execution', 2],
       ['Option', 'auxiliary', 0], ['Result', 'auxiliary', 0], ['String', 'auxiliary', 0],
       ['->', 'auxiliary', 0], ['=>', 'navigation', 2], ['?;', 'navigation', 2], ['?".into()', 'content', 0],
       ["',", 'structure', 0], ["';", 'structure', 0], [",';", 'content', 0], ['match', 'navigation', 2],
-    ]) {
-      const token = tokenAt(code, 'rust', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    ]);
   }
 });
 
 test('Rust 属性只弱化边界，属性名称、字符串和运行时表达式保持原层级', () => {
   const code = '#[derive(Debug)]\nstruct Item;\n#[cfg(feature = "fast")]\nfn run(values: &[i32]) { call(values[0]); }';
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
     checkBrackets(code, 'rust', mode, [
       ['#[derive(Debug)]', 0], ['#[cfg(feature = "fast")]', 0], ['call(values[0])', 2],
     ]);
-    for (const [text, role, style] of [
+    checkTokens(code, 'rust', mode, [
       ['#', 'auxiliary', 0], ['derive', 'content', 0], ['cfg', 'content', 0],
       ['Debug', 'auxiliary', 0], ['feature', 'content', 0], ['=', 'execution', 2],
       ['"fast', 'structure', 0], ['fast', 'content', 0], ['fn', 'navigation', 2], ['call', 'execution', 2],
-    ]) {
-      const token = tokenAt(code, 'rust', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    ]);
   }
 });
 
 test('C 的结构体、回调、预处理与指针访问复用通用规则，未细分的类型名不猜测语义', () => {
   const code = '#define LIMIT 2\ntypedef struct { const char *title; int done; } Task;\ntypedef int (*Predicate)(const Task *);\nint visit(const Task tasks[], Predicate accept) {\n  for (int i = 0; i < LIMIT; ++i) {\n    const Task *task = &tasks[i];\n    if (!accept(task)) continue;\n    puts(task->title);\n  }\n  return 0;\n}';
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [text, role, style] of [
+    checkTokens(code, 'c', mode, [
       ['#define', 'navigation', 2], ['typedef', 'navigation', 2], ['struct', 'navigation', 2],
       ['for', 'navigation', 2], ['if', 'navigation', 2], ['continue', 'navigation', 2],
       ['const', 'auxiliary', 0], ['char', 'auxiliary', 0], ['Task;', 'execution', 2],
       ['accept(task)', 'execution', 2], ['->title', 'execution', 2], ['[i]', 'execution', 2],
       ['0;', 'content', 0],
-    ]) {
-      const token = tokenAt(code, 'c', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    ]);
   }
 });
 
 test('C# 类型与修饰符使用辅助信息，record 和执行箭头提供导航，括号使用阅读主体', () => {
   const code = 'record Item(string Title, bool Done);\nclass Program {\n  static async Task<Item[]> Load() {\n    var items = await Read();\n    return items.Where(item => !item.Done).ToArray();\n  }\n  static string Describe(Item item) => item switch {\n    { Done: true } => "done", _ => $"{item.Title}"\n  };\n}';
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [text, role, style] of [
+    checkTokens(code, 'csharp', mode, [
       ['record', 'navigation', 2], ['class', 'navigation', 2], ['async', 'navigation', 2],
       ['await', 'navigation', 2], ['=> !item', 'navigation', 2], ['=> item switch', 'navigation', 2], ['switch', 'navigation', 2],
       ['string', 'auxiliary', 0], ['bool', 'auxiliary', 0], ['Task<', 'auxiliary', 0], ['static', 'auxiliary', 0], ['var', 'auxiliary', 0],
       ['Item(string', 'execution', 2], ['Title,', 'execution', 2], ['{\n  static', 'execution', 2], ['[]', 'execution', 2],
       ['true', 'content', 0], ['"done', 'structure', 0], ['done"', 'content', 0],
-    ]) {
-      const token = tokenAt(code, 'csharp', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    ]);
   }
 });
 
 test('Lua local 使用辅助信息，函数与分支保持导航，表和回调保持阅读主体', () => {
   const code = 'local function pending(tasks)\n  local result = {}\n  -- Keep unfinished tasks.\n  for _, task in ipairs(tasks) do\n    if not task.done then table.insert(result, task) end\n  end\n  return result\nend\nlocal ok, value = pcall(pending, {{done = false}})';
   for (const mode of ['light', 'dark']) {
-    const palette = createShikiPalette(seeds, mode);
-    for (const [text, role, style] of [
+    checkTokens(code, 'lua', mode, [
       ['local function', 'auxiliary', 0], ['local result', 'auxiliary', 0],
       ['function', 'navigation', 2], ['for', 'navigation', 2], ['if', 'navigation', 2], ['then', 'navigation', 2], ['end\n', 'navigation', 2],
       ['pending(tasks)', 'execution', 2], ['ipairs', 'execution', 2], ['table.insert', 'execution', 2], ['pcall', 'execution', 2],
       ['false', 'content', 0], ['-- Keep', 'comment', 1],
-    ]) {
-      const token = tokenAt(code, 'lua', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    ]);
   }
 });
 
@@ -1029,12 +877,8 @@ test('纯文本不增加语法分类，Mermaid 别名使用同一主题，Diff �
     const palette = createShikiPalette(seeds, mode);
     const plain = highlighter.codeToTokens('输入 V → 输出 R', { lang: 'text', theme: `cinderfolio-${mode}` });
     assert.equal(plain.fg.toLowerCase(), palette.execution.color);
-    assert.equal(tokenAt('flowchart LR\n A --> B', 'mmd', mode, 'flowchart').color.toLowerCase(), palette.navigation.color);
+    checkTokens('flowchart LR\n A --> B', 'mmd', mode, [['flowchart', 'navigation']]);
     const code = '--- a/a.py\n+++ b/a.py\n@@ -1,2 +1,2 @@\n unchanged(value[0])\n-old\n+new';
-    for (const [text, role, style] of [['---', 'auxiliary', 0], ['@@', 'auxiliary', 0], ['unchanged', 'content', 0], ['(value', 'content', 0], ['-old', 'deleted', 8], ['+new', 'execution', 2]]) {
-      const token = tokenAt(code, 'diff', mode, text);
-      assert.equal(token.color.toLowerCase(), palette[role].color, `${mode}.${text}`);
-      assert.equal(token.fontStyle, style, `${mode}.${text}`);
-    }
+    checkTokens(code, 'diff', mode, [['---', 'auxiliary', 0], ['@@', 'auxiliary', 0], ['unchanged', 'content', 0], ['(value', 'content', 0], ['-old', 'deleted', 8], ['+new', 'execution', 2]]);
   }
 });

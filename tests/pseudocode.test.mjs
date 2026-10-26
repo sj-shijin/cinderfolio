@@ -3,7 +3,7 @@ import test from 'node:test';
 import fs from 'node:fs';
 import { inflateSync } from 'node:zlib';
 import pseudocode from 'pseudocode';
-import { renderPseudocode, pseudocodeMathCss, pseudocodeMathEngine } from '../pseudocode-render.mjs';
+import { renderPseudocode, pseudocodeMathCss, pseudocodeMathEngine, pseudocodeOptions } from '../pseudocode-render.mjs';
 
 const source = String.raw`\begin{algorithm}
 \caption{CDCL}
@@ -19,6 +19,13 @@ test('默认隐藏结束行并显示缩进竖线，允许显式覆盖', () => {
   for (const options of [{}, { noEnd: false, scopeLines: false }]) {
     const expected = pseudocode.renderToString(source, { captionCount: 0, lineNumber: true, noEnd: true, scopeLines: true, ...options });
     assert.equal(renderPseudocode(source, 1, options), `<div class="cf-pseudocode" data-math="katex">${expected}</div>`);
+    // 两个引擎的完整排版矩阵在核心验证；网站和 Marp 只检查选项接入。
+    for (const math of ['katex', 'mathjax']) {
+      const html = renderPseudocode(source, 1, { math, ...options });
+      assert.equal(html.includes('with-scopelines'), options.scopeLines ?? true, math);
+      assert.equal(html.includes('end if'), options.noEnd === false, math);
+      assert.equal((html.match(/class="ps-linenum"/g) ?? []).length, options.noEnd === false ? 4 : 3, math);
+    }
   }
 });
 
@@ -52,6 +59,11 @@ test('两个公式引擎实际分别排版，交错渲染不会串引擎或编�
   assert.equal(pseudocodeMathEngine(undefined, 'mathjax'), 'mathjax');
   assert.equal(pseudocodeMathEngine('pseudocode math=katex', 'mathjax'), 'katex');
   assert.throws(() => pseudocodeMathEngine('math=unknown'), /不支持/);
+  assert.deepEqual(pseudocodeOptions('', 'mathjax'), { math: 'mathjax' });
+  for (const enabled of [true, false]) {
+    assert.deepEqual(pseudocodeOptions(`math=katex noEnd=${enabled} scopeLines=${enabled}`, 'mathjax'),
+      { math: 'katex', noEnd: enabled, scopeLines: enabled });
+  }
 });
 
 test('MathJax 字形、正文粗体和字体命令都使用同一套本地字体', () => {
