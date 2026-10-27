@@ -39,7 +39,7 @@ Cinderfolio
 
 选择构建方式，获得第一份演示。
 
-<!-- 完整效果使用本项目的 CLI 引擎与资源。VS Code 扩展提供另一种编辑预览入口，但并不自动加载本项目的渲染扩展。 -->
+<!-- CLI 提供完整渲染与资源；VS Code 扩展通过主题 CSS 提供编辑预览。 -->
 
 ---
 
@@ -77,7 +77,7 @@ npm run marp
 - 本地字体、Pele、Shiki、标注块与行内标记还需额外接入。
 - 要获得完整效果，在集成终端运行 `npm run marp`，打开生成的 HTML。
 
-<!-- 已核对 Marp for VS Code 3.6.1 的公开配置和源码：主题 CSS 是正式入口，未提供自定义 engine 设置；预览直接创建 Marp，导出使用扩展生成的配置，不能把本站 marp-engine.mjs 直接填入扩展设置。可继续探索先用 Pele / Shiki 预渲染资源，或编写专用扩展；本演示未宣称这些方案已经接入。封面使用 Marp 原生支持的 h1 / small，不需要自定义引擎；完整字体需要 fonts/marp/font.css 及 WOFF2。来源：https://github.com/marp-team/marp-vscode#use-custom-theme-css 及 src/extension.ts、src/option.ts。 -->
+<!-- Marp for VS Code 3.6.1 的接入入口是 markdown.marp.themes，支持主题 CSS 与原生 h1 / small 版式；自定义引擎和本地字体通过 CLI 加载。来源：https://github.com/marp-team/marp-vscode#use-custom-theme-css -->
 
 ---
 
@@ -360,7 +360,7 @@ function slideTitle(title: string) {
 
 `-`、`+` 与 `1.` 直接显示；`*`、`1)` 在 Marp 中用于分步。
 
-<!-- 无序列表、有序列表、嵌套列表与引用均为核心语法。CommonMark 的 *、-、+ 都可创建无序列表，1. 和 1) 都可创建有序列表；Marp 为 * 和 1) 增加了分步行为，这里使用 - 与 1. 避免把核心语法演示隐藏起来。 -->
+<!-- CommonMark 的 *、-、+ 可创建无序列表，1. 和 1) 可创建有序列表。Marp 的 * 与 1) 启用分步显示；本页用 - 与 1. 一次展示完整列表。 -->
 
 ---
 
@@ -696,7 +696,7 @@ flowchart TD
 </div>
 </div>
 
-<!-- 五种标记共用现有强调色系与灰阶，通过标题及边框区分职责；不引入额外红黄绿配色。普通 > 仍是引用。标记采用 GitHub 风格，Markdown 标注块由引擎在构建期转换为 HTML，不需要额外浏览器脚本。参考：https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts -->
+<!-- 五种标记共用强调色系与灰阶，通过标题和边框区分职责；普通 > 保留引用样式。引擎在构建期将 GitHub 风格的标注块转换为 HTML。参考：https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax#alerts -->
 
 ---
 
