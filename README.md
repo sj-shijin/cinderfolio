@@ -42,6 +42,17 @@ dist/
 
 修改默认颜色时编辑 `palette.mjs` 的 `seeds`；运行时生成可直接传入三个颜色。Rspress、Pele 与 Marp CSS 包含配色变量，不要求同时加载 `colors.css`；算法样式复用页面已有的变量。
 
+### 网页下载的使用范围
+
+下载文件保存调色栏的当前配色，未启用 JavaScript 时提供默认配色。文件可脱离本站使用，但渲染器、主题切换逻辑和字体由使用方提供：
+
+- **Rspress**：`cf-rspress.css` 包含亮暗变量及组件样式，加载在 Rspress 原生样式之后，跟随 `html.rp-dark`。代码高亮另配 Shiki JSON；不包含本站字体与页面组件。
+- **Pele**：`cf-pele.css` 包含全部颜色与 SVG 规则。内联 SVG 或外层容器添加 `cinderfolio-pele`，并设置 `data-cinderfolio="light"` 或 `"dark"`；外部 SVG 需在自身文档中包含样式。加宽连线命中区另需 `withPeleHitAreas()`，不影响基本配色。
+- **Mermaid**：`cf-mermaid-light.json` / `cf-mermaid-dark.json` 可直接传给 `mermaid.initialize()`；切换主题后重新渲染。JSON 内使用具体颜色，不依赖 `--cf-*`。
+- **Shiki**：`cf-shiki-light.json` / `cf-shiki-dark.json` 可作为自定义主题加载；语言语法由 Shiki 提供。两份 JSON 使用具体颜色，不依赖本站 CSS；同时输出两套主题时，按 [Shiki 双主题方式](https://shiki.style/guide/dual-themes)切换显示。
+- **Marp**：`cf-marp.css` 提供配色和版式，可作为原生 Marp 主题加载。CSS 不包含字体文件、渲染器或 Markdown 解析扩展；完整效果使用下方的 Cinderfolio 构建入口。
+- **Pseudocode**：`cf-pseudocode.css` 是共用算法样式，需要 `colors.css` 或宿主提供配色变量，并配套公式引擎的 CSS 与字体，网页暂不提供单独下载。接入方式见[论文式伪代码](#论文式伪代码)。
+
 ## 在其他项目使用
 
 可将仓库作为固定版本的子模块，再通过本地包依赖使用；当前未发布到 npm：
