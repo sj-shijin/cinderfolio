@@ -172,7 +172,7 @@ npm ci        # 安装锁定依赖
 npm run marp  # 一次性构建 examples/marp.html，完成后退出
 ```
 
-`examples/marp.md` 是 Cinderfolio-Marp 使用演示，分为快速开始、特性展示、标准 Markdown、扩展 Markdown、原生 Marp 五章。核心语法与渲染效果对照展示；表格、删除线、高亮、上下标、公式、Pele 图表与标注块放在扩展章；文档与单页配置、图片尺寸、分步列表放在原生 Marp 章。任务列表与脚注仅列写法，尚未启用。
+`examples/marp.md` 是 Cinderfolio-Marp 使用演示，分为快速开始、特性展示、标准 Markdown、扩展 Markdown、原生 Marp 五章。特性章介绍封面、过渡页与内容布局；标准章展示核心语法，并在代码块示例中介绍 Shiki 高亮；扩展章展示表格、行内标记、公式、Mermaid 图表、论文式伪代码与标注块，随示例介绍 Pele、pseudocode.js 的渲染职责。文档与单页配置、图片尺寸、分步列表放在原生 Marp 章。任务列表与脚注仅列写法，尚未启用。
 
 默认源文件是仓库已有的 `examples/marp.md`，HTML 生成在它旁边，可在浏览器中打开。修改文稿后重新运行 `npm run marp`；比例跟随文稿里的 `size`。字体固定为 Inter、Noto Sans SC、Sarasa Mono SC，直接引用仓库内的 WOFF2。
 

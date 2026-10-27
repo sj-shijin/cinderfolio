@@ -8,7 +8,7 @@ lang: zh-CN
 paginate: true
 title: Cinderfolio-Marp
 description: Cinderfolio-Marp 快速开始、特性展示、标准 Markdown、扩展 Markdown 与原生 Marp 使用演示。
-header: '**[快速开始](#2)** [特性展示](#5) [标准 Markdown](#10) [扩展 Markdown](#14) [原生 Marp](#22)'
+header: '**[快速开始](#2)** [特性展示](#5) [标准 Markdown](#9) [扩展 Markdown](#14) [原生 Marp](#22)'
 footer: Cinderfolio-Marp
 ---
 
@@ -81,7 +81,7 @@ npm run marp
 
 ---
 
-<!-- header: '[快速开始](#2) **[特性展示](#5)** [标准 Markdown](#10) [扩展 Markdown](#14) [原生 Marp](#22)' -->
+<!-- header: '[快速开始](#2) **[特性展示](#5)** [标准 Markdown](#9) [扩展 Markdown](#14) [原生 Marp](#22)' -->
 <!-- _class: transition -->
 
 02
@@ -230,56 +230,14 @@ block-beta
 
 ---
 
-## Pele 图表与 Shiki 代码
-
-<div class="cf-cols">
-
-<div class="cf-col">
-
-### Shiki · 阅读流程
-
-```ts
-// 先准备内容，再生成演示。
-function slideTitle(title: string) {
-  if (!title.trim()) return 'Cinderfolio';
-  return title.trim();
-}
-```
-
-普通代码围栏指定语言，复用 Cinderfolio 的亮暗主题。
-
-</div>
-<div class="cf-col cf-align-tc">
-
-### Pele · 构建期绘图
-
-```mermaid
-flowchart TD
-  accTitle: Cinderfolio 渲染流程
-  accDescr: Markdown 中的图表交给 Pele，代码交给 Shiki，合并为 Marp HTML。
-  A[Markdown] --> B[Pele 图表]
-  A --> C[Shiki 代码]
-  B --> D[Marp HTML]
-  C --> D
-```
-
-`mermaid` 围栏生成内联 SVG，颜色跟随演示主题。
-
-</div>
-</div>
-
-<!-- Pele 与 Shiki 属于 Cinderfolio 的 CLI 扩展，不是 Marp 原生功能。多图以 Markdown 行号生成独立 SVG ID；浏览器只接收生成结果，不重复加载渲染器。调色继续复用同一组 CSS 变量。 -->
-
----
-
-<!-- header: '[快速开始](#2) [特性展示](#5) **[标准 Markdown](#10)** [扩展 Markdown](#14) [原生 Marp](#22)' -->
+<!-- header: '[快速开始](#2) [特性展示](#5) **[标准 Markdown](#9)** [扩展 Markdown](#14) [原生 Marp](#22)' -->
 <!-- _class: transition -->
 
 03
 
 ## 标准 Markdown
 
-用标题、列表、引用与链接组织内容。
+用文字、代码、列表与链接组织内容。
 
 <!-- 本章以 CommonMark 核心语法为准；Marp 对分页与列表标记的特殊处理放在原生 Marp 章。参考：https://spec.commonmark.org/ -->
 
@@ -287,7 +245,7 @@ flowchart TD
 
 <!-- _class: compact -->
 
-## 文字与代码
+## 文字与行内代码
 
 <div class="cf-cols">
 
@@ -300,10 +258,6 @@ flowchart TD
 *斜体* **粗体** ***粗斜体***
 `行内代码`
 \*原样星号\*
-
-```python
-print("Cinderfolio")
-```
 ````
 
 </div>
@@ -317,16 +271,54 @@ print("Cinderfolio")
 
 \*原样星号\*
 
-```python
-print("Cinderfolio")
-```
-
 </div>
 </div>
 
 用空行分段；行末两个空格可手动换行。
 
-<!-- 标题、强调、行内代码、代码围栏与反斜杠转义属于 CommonMark 核心语法。代码围栏本身是核心语法，语法高亮由本站 Shiki 引擎提供。Marp 还会把普通段落内的换行转换为 br；本主题约定封面 h1、页题 h2、页内标题 h3 起，原生 Markdown 支持 h1–h6。独立横线会被 Marp 用于分页，见原生 Marp 章。 -->
+<!-- 标题、强调、行内代码与反斜杠转义属于 CommonMark 核心语法。Marp 还会把普通段落内的换行转换为 br；本主题约定封面 h1、页题 h2、页内标题 h3 起，原生 Markdown 支持 h1–h6。独立横线会被 Marp 用于分页，见原生 Marp 章。 -->
+
+---
+
+<!-- _class: compact -->
+
+## 代码块与语法高亮
+
+<div class="cf-cols">
+
+<div class="cf-col">
+
+### 写法
+
+````markdown
+```ts
+function slideTitle(title: string) {
+  if (!title.trim()) return 'Cinderfolio';
+  return title.trim();
+}
+```
+````
+
+三个反引号包裹代码，后接语言名，如 `ts`、`python`。
+
+</div>
+<div class="cf-col">
+
+### 效果
+
+```ts
+function slideTitle(title: string) {
+  if (!title.trim()) return 'Cinderfolio';
+  return title.trim();
+}
+```
+
+</div>
+</div>
+
+代码围栏是标准 Markdown；[Shiki](https://shiki.style/) 负责语法高亮，复用 Cinderfolio 配色。
+
+<!-- CommonMark 定义代码围栏及其语言信息，不规定具体的高亮方式。Cinderfolio 在构建期使用 Shiki 输出带语法颜色和字形的 HTML，保留 Marp 原生代码自动缩放。普通代码、Mermaid 图表和论文式伪代码共享围栏写法，后两者的扩展渲染分别在下一章介绍。参考：https://spec.commonmark.org/0.31.2/#fenced-code-blocks -->
 
 ---
 
@@ -408,16 +400,16 @@ print("Cinderfolio")
 
 ---
 
-<!-- header: '[快速开始](#2) [特性展示](#5) [标准 Markdown](#10) **[扩展 Markdown](#14)** [原生 Marp](#22)' -->
+<!-- header: '[快速开始](#2) [特性展示](#5) [标准 Markdown](#9) **[扩展 Markdown](#14)** [原生 Marp](#22)' -->
 <!-- _class: transition -->
 
 04
 
 ## 扩展 Markdown
 
-用表格、公式与图表补充结构化表达。
+用表格、公式、算法与图表补充结构化表达。
 
-<!-- 扩展 Markdown 不是单一标准。当前 Marp Core 4.4.0 支持 GFM 表格、删除线与数学公式；Mermaid 由 Pele 引擎提供，标注块、高亮与上下标由 Cinderfolio 的 Markdown 扩展提供。任务列表和脚注尚未启用，只列写法。参考：https://github.com/marp-team/marp-core/tree/v4#marp-markdown -->
+<!-- 扩展 Markdown 不是单一标准。当前 Marp Core 4.4.0 支持 GFM 表格、删除线与数学公式；Mermaid 图表由 Pele 渲染，论文式伪代码由 pseudocode.js 排版，二者通过 Cinderfolio 的围栏扩展接入。标注块、高亮与上下标也由 Markdown 扩展提供。任务列表和脚注尚未启用，只列写法。参考：https://github.com/marp-team/marp-core/tree/v4#marp-markdown -->
 
 ---
 
@@ -555,6 +547,8 @@ $$
 \end{algorithm}
 ```
 
+<small>[pseudocode.js](https://saswat.padhi.me/pseudocode.js/) 负责算法排版；公式跟随文稿的 MathJax / KaTeX 设置。</small>
+
 </div>
 </div>
 
@@ -609,7 +603,7 @@ flowchart TD
 </div>
 <div class="cf-col cf-align-tc">
 
-### Pele 渲染
+### 效果
 
 ```mermaid
 flowchart TD
@@ -620,9 +614,9 @@ flowchart TD
 </div>
 </div>
 
-图表由 Cinderfolio 的 Pele 扩展生成，配色跟随亮暗主题。
+[Pele](https://pele.run/) 将 Mermaid 语法渲染为 SVG，配色跟随亮暗主题。
 
-<!-- Mermaid 围栏复用 marp-engine.mjs 中已接入的 Pele，不属于当前 Marp Core 4.4.0 原生图表能力。与前面的 Cinderfolio 渲染流程示例使用不同图表，验证多图 ID 与引用不会冲突。 -->
+<!-- mermaid 围栏在标准代码围栏上增加图表渲染，由 Cinderfolio 的 Pele 扩展在构建期生成 SVG，不属于当前 Marp Core 4.4.0 原生图表能力。每图使用独立 SVG ID，浏览器只接收生成结果。 -->
 
 ---
 
@@ -745,7 +739,7 @@ flowchart TD
 
 ---
 
-<!-- header: '[快速开始](#2) [特性展示](#5) [标准 Markdown](#10) [扩展 Markdown](#14) **[原生 Marp](#22)**' -->
+<!-- header: '[快速开始](#2) [特性展示](#5) [标准 Markdown](#9) [扩展 Markdown](#14) **[原生 Marp](#22)**' -->
 <!-- _class: transition -->
 
 05
@@ -794,7 +788,7 @@ footer: 作者 · 单位
 header: >
   [快速开始](#2)
   [特性展示](#5)
-  [标准 Markdown](#10)
+  [标准 Markdown](#9)
   [扩展 Markdown](#14)
   **[原生 Marp](#22)**
 footer: Cinderfolio · 作者
