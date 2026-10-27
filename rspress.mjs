@@ -98,6 +98,15 @@ html .rp-codeblock__content--line-numbers code .line::before {
   color: var(--cf-text-subtle);
 }
 
+/* 官方 Tabs 的可选配色类；内层 Tabs 继承标签栏底色并共用选中项规则。 */
+.rp-tabs.cf-tabs {
+  --rp-code-title-bg: var(--cf-surface);
+}
+
+.rp-tabs.cf-tabs .rp-tabs__label__item--selected {
+  background-color: var(--cf-background);
+}
+
 /* 网页算法容器沿用代码块外框；算法本身的排版由 cf-pseudocode.css 负责。 */
 .rp-doc .cf-pseudocode {
   box-sizing: border-box;

@@ -91,6 +91,8 @@ const mermaidDark = createMermaidTheme(input, 'dark');
 
 Rspress 主题入口中加载 `cinderfolio/themes/cf-rspress.css`，Shiki 配置使用上述亮暗主题对象。需要实时调色时，`createShikiTheme(input, mode, { variables: true })` 可生成引用通用色阶变量的主题；独立 JSON 默认使用 HEX。
 
+官方 `<Tabs className="cf-tabs">` 可选用统一配色：标签栏使用浅层底色，选中项使用画布底色，内层 Tabs 自动沿用。规则包含在 `cf-rspress.css` 中，文字、阴影、交互和换行继续使用 Rspress 默认实现。
+
 Pele 渲染后的内联 SVG 可以直接加载导出的 CSS：
 
 ```html
