@@ -9,12 +9,13 @@ import { createPeleCss } from '../css.mjs';
 import { createRspressCss } from '../rspress.mjs';
 import { createMarpCss } from '../marp.mjs';
 import { createMermaidTheme } from '../mermaid.mjs';
+import { createTypstTheme, createTypstPrompt } from '../typst.mjs';
 
 test('无 node_modules 时仍可独立导出所有主题，分发产物带有 MIT 许可', async () => {
   const root = await fs.mkdtemp(path.join(tmpdir(), 'cinderfolio-export-'));
   try {
     const source = new URL('../', import.meta.url);
-    for (const name of ['palette', 'oklch', 'pele', 'pele-svg', 'mermaid', 'shiki', 'pseudocode', 'css', 'build', 'rspress', 'marp', 'license']) {
+    for (const name of ['palette', 'oklch', 'pele', 'pele-svg', 'mermaid', 'shiki', 'typst', 'pseudocode', 'css', 'build', 'rspress', 'marp', 'license']) {
       await fs.copyFile(new URL(`${name}.mjs`, source), path.join(root, `${name}.mjs`));
     }
     const output = path.join(root, 'exported');
@@ -25,9 +26,12 @@ test('无 node_modules 时仍可独立导出所有主题，分发产物带有 MI
       'LICENSE', 'colors.css', 'colors.json', 'cf-pele.css', 'cf-rspress.css', 'cf-marp.css', 'cf-pseudocode.css',
       'cf-shiki-light.json', 'cf-shiki-dark.json',
       'cf-mermaid-light.json', 'cf-mermaid-dark.json',
+      'cinderfolio.typ', 'cinderfolio-prompt.txt',
     ].sort());
     assert.equal(licenseText, await fs.readFile(new URL('LICENSE', source), 'utf8'));
     assert.equal(await read('LICENSE'), licenseText);
+    assert.equal(await read('cinderfolio.typ'), createTypstTheme());
+    assert.equal(await read('cinderfolio-prompt.txt'), createTypstPrompt());
     for (const name of ['colors.css', 'cf-pele.css', 'cf-rspress.css', 'cf-marp.css', 'cf-pseudocode.css']) {
       assert.ok((await read(name)).startsWith(licenseComment));
     }

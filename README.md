@@ -1,12 +1,12 @@
 # Cinderfolio
 
-以深色、浅色和品牌基准色生成统一配色，导出 Rspress、Pele、Mermaid、Shiki 与 Marp 主题。包含十六等分灰阶、五档强调色系、亮暗职责映射和八个分类色。
+以深色、浅色和品牌基准色生成统一配色，导出 Rspress、Pele、Mermaid、Shiki、Marp 与 Typst 主题。包含十六等分灰阶、五档强调色系、亮暗职责映射和八个分类色。
 
 [源码](https://github.com/sj-shijin/cinderfolio) · [在线调色与预览](https://shijin.space/projects/cinderfolio/) · [维护文档](docs/maintenance.md) · [开发约定](AGENTS.md)
 
 ## 生成主题
 
-使用 Node.js 22.12+（推荐 24）。CSS / JSON 生成只使用 Node.js 内置模块：
+使用 Node.js 22.12+（推荐 24）。主题生成只使用 Node.js 内置模块：
 
 ```sh
 git clone https://github.com/sj-shijin/cinderfolio.git
@@ -28,6 +28,8 @@ dist/
   cf-shiki-dark.json     # Shiki 暗色主题
   cf-marp.css            # Marp 主题，含 Pele、Shiki 与算法样式
   cf-pseudocode.css      # 算法样式，复用宿主 --cf-* 变量
+  cinderfolio.typ        # 原生 Typst 亮暗配色与分类色
+  cinderfolio-prompt.txt # CeTZ 绘图指令，含使用页和下载入口
   LICENSE               # 随产物分发的许可
 ```
 
@@ -109,6 +111,23 @@ const { svg } = await mermaid.render('diagram-id', source);
 ```
 
 适配以 Mermaid 12.2.0 验证。使用方安装渲染器，切换亮暗后应用对应配置并重新绘图。
+
+## Typst 与 CeTZ
+
+在[下载页](https://shijin.space/projects/cinderfolio/typst-cetz/)选色并下载 `cinderfolio.typ`、复制配套 Prompt；也可通过公开入口生成：
+
+```js
+import { createTypstTheme, createTypstPrompt } from 'cinderfolio/typst';
+
+const typ = createTypstTheme(input);
+const prompt = createTypstPrompt(input);
+```
+
+模块包含原生 Typst 颜色对象，`cf-palette(mode: "light")` / `cf-palette(mode: "dark")` 返回语义颜色与八个分类色；用途及兼容版本在模块注释中维护。按源文件位置相对导入模块，完整示例见下载页。
+
+Prompt 引用使用页并指导下载模块；默认配色提供文件直链，自定义配色带上三个种子值，指导从网页下载。使用页与下载链接统一指向 `https://shijin.space` 的正式地址。
+
+亮暗模式在代码中显式选择，更改配色文件或模式后重新编译。网站提供调色、模块下载和 Prompt，绘图由使用方的 Typst 编译器完成。
 
 ## 论文式伪代码
 
