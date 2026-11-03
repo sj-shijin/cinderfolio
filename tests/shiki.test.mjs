@@ -8,7 +8,7 @@ import { shikiRoles, shikiDisplayRoles, createShikiPalette, createShikiTheme } f
 let highlighter;
 before(async () => {
   highlighter = await createHighlighter({
-    langs: ['vue', 'c', 'cpp', 'csharp', 'python', 'javascript', 'typescript', 'rust', 'go', 'java', 'bash', 'powershell', 'json', 'css', 'scss', 'markdown', 'html', 'xml', 'tex', 'latex', 'ruby', 'kotlin', 'swift', 'lua', 'yaml', 'toml', 'sql', 'cmake', 'dockerfile', 'make', 'mermaid', 'diff', 'regexp', 'jsx', 'tsx', 'svelte', 'twig', 'liquid'],
+    langs: ['vue', 'c', 'cpp', 'csharp', 'python', 'javascript', 'typescript', 'rust', 'go', 'java', 'bash', 'powershell', 'json', 'css', 'scss', 'markdown', 'html', 'xml', 'tex', 'latex', 'typst', 'ruby', 'kotlin', 'swift', 'lua', 'yaml', 'toml', 'sql', 'cmake', 'dockerfile', 'make', 'mermaid', 'diff', 'regexp', 'jsx', 'tsx', 'svelte', 'twig', 'liquid'],
     themes: ['light', 'dark'].map(mode => createShikiTheme(seeds, mode)),
   });
 });
@@ -869,6 +869,34 @@ test('Lua local 使用辅助信息，函数与分支保持导航，表和回调�
       ['pending(tasks)', 'execution', 2], ['ipairs', 'execution', 2], ['table.insert', 'execution', 2], ['pcall', 'execution', 2],
       ['false', 'content', 0], ['-- Keep', 'comment', 1],
     ]);
+  }
+});
+
+test('Typst 原生语法区分代码、正文和数学，字面量保持常规，标签与引用使用结构层级', () => {
+  const code = `#set page(width: auto, fill: none)
+#set heading(numbering: "1.")
+#let score(x, scale: 0.5) = {
+  if x > 0 { scale * x } else { 0 }
+}
+= Vector score <sec-score>
+// 标记、数学和代码可以组合。
+For vectors $x in RR^n$, define $ s = alpha x $.
+See @sec-score. Result: #score(2).`;
+  for (const mode of ['light', 'dark']) {
+    checkTokens(code, 'typst', mode, [
+      ['#set', 'structure', 0], ['set page', 'navigation', 2], ['let score', 'auxiliary', 0],
+      ['score(x', 'execution', 2], ['scale:', 'execution', 2], ['if x', 'navigation', 2],
+      ['else', 'navigation', 2], ['> 0', 'execution', 2], ['* x', 'execution', 2],
+      ['auto', 'content', 0], ['none', 'content', 0], ['0.5', 'content', 0], ['1.', 'content', 0],
+      ['Vector score', 'execution', 2], ['<sec-score>', 'structure', 0],
+      ['// 标记', 'comment', 1], ['For vectors', 'content', 0], ['alpha', 'execution', 2],
+      ['@sec-score', 'structure', 0], ['sec-score.', 'structure', 0],
+    ]);
+    const options = { theme: `cinderfolio-${mode}` };
+    assert.deepEqual(
+      highlighter.codeToTokens(code, { ...options, lang: 'typ' }).tokens,
+      highlighter.codeToTokens(code, { ...options, lang: 'typst' }).tokens,
+    );
   }
 });
 

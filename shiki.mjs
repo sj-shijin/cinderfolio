@@ -101,6 +101,8 @@ export const shikiRoles = {
       'source',
       'string', 'constant', 'support.constant', 'string storage.type.string', 'support.class.math',
       'keyword.other.unit', 'keyword.other.suffix.literal',
+      // Typst 的 auto / none 是取值，语法却使用 keyword 标记。
+      'keyword.other.auto.typst', 'keyword.other.none.typst',
       // $true / $false / $null 的前缀随字面量，普通变量仍使用端点粗体。
       'constant.language.powershell punctuation.definition.variable.powershell',
       // 文本与 JSX 正文使用常规字重；嵌入表达式仍复用代码规则。
@@ -181,6 +183,9 @@ export const shikiRoles = {
       'punctuation.definition.heading',
       'punctuation.definition.keyword', 'punctuation.definition.lifetime', 'markup.list punctuation.definition.list',
       'markup.underline.link', 'constant.other.reference.label', 'variable.parameter.definition.label',
+      // Typst 的模式切换前缀、标签和交叉引用属于文档结构。
+      'keyword.control.hash.typst', 'string.other.label.typst', 'string.other.reference.typst',
+      'string.other.reference.typst punctuation.definition.reference.typst',
       // 只弱化 Markdown 自身的链接、图片与围栏边界，嵌入代码沿用原语言规则。
       'text.html.markdown punctuation.definition.link', 'text.html.markdown punctuation.definition.constant',
       'punctuation.definition.metadata.markdown', 'punctuation.definition.markdown',
