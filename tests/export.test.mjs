@@ -39,8 +39,7 @@ test('无 node_modules 时仍可独立导出所有主题，分发产物带有 MI
     assert.ok(pele.includes('[data-cinderfolio="dark"]'));
     for (const declaration of ['--cf-background: #121212', '--pele-border: #787877', '--pele-border: #959593',
       '--pele-critical: #f97316', '--pele-critical: #fcaf79']) assert.ok(pele.includes(declaration));
-    assert.equal(pele.split('--pele-series-1: #cf9600').length - 1, 1);
-    assert.equal(pele.split('--pele-series-1: #c08b00').length - 1, 1);
+    assert.equal(pele.split('--pele-series-1: #7fb400').length - 1, 2);
     assert.equal(pele.split('--pele-accent: #fa9148').length - 1, 2);
     assert.doesNotMatch(pele, /--cf-pele-fill-/);
     assert.doesNotMatch(await read('cf-rspress.css'), /--pele-/);
@@ -52,7 +51,8 @@ test('无 node_modules 时仍可独立导出所有主题，分发产物带有 MI
     assert.equal(colors.pele.seriesRecipe.space, 'oklch');
     assert.equal(colors.pele.roles.critical.accent.light, 'brand');
     assert.equal(colors.pele.themes.dark.colors.accent, '#fa9148');
-    assert.ok(colors.pele.themes.light.vision.after.models.deuteranopia);
+    assert.ok(colors.pele.themes.light.vision.models.deuteranopia);
+    assert.ok(colors.pele.themes.light.vision.models.deuteranopia.conflicts.length > 0);
     for (const [mode, foreground, background] of [['light', '#121212', '#fafaf8'], ['dark', '#fafaf8', '#121212']]) {
       const content = await read(`cf-shiki-${mode}.json`);
       const theme = JSON.parse(content);

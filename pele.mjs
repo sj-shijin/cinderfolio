@@ -1,4 +1,4 @@
-/** Pele 专用职责；分类色由品牌色色相扩展，结构色复用固定灰阶。 */
+/** Pele 专用职责；分类色继承品牌色的明度和彩度，结构色复用固定灰阶。 */
 import { seeds, createGrayScale, grayIndex, createAccentScale, contrast } from './palette.mjs';
 import { seriesRecipe, createCategoricalPalette } from './oklch.mjs';
 export { withPeleHitAreas } from './pele-svg.mjs';
@@ -14,8 +14,8 @@ export const peleRoles = {
   accent: { label: '强调', accent: { light: 'light', dark: 'light' }, usage: '普通任务、票号与演化箭头' },
   critical: { label: '关键状态', accent: { light: 'brand', dark: 'lighter' }, usage: '关键任务与看板高优先级' },
   error: { label: '错误文字', gray: 0, usage: '渲染错误信息' },
-  ...Object.fromEntries(seriesRecipe.hueOffsets.map((hueOffset, index) => [
-    `series-${index + 1}`, { label: `分类 ${index + 1}`, hueOffset },
+  ...Object.fromEntries(seriesRecipe.order.map((slot, index) => [
+    `series-${index + 1}`, { label: `分类 ${index + 1}`, hueOffset: seriesRecipe.hueOffsets[slot - 1] },
   ])),
 };
 
@@ -32,7 +32,7 @@ function textOn(fill, input) {
 export function createPeleTheme(input = seeds, mode = 'light') {
   const gray = createGrayScale(input);
   const accent = createAccentScale(input.accent);
-  const generated = createCategoricalPalette(input, mode);
+  const generated = createCategoricalPalette(input);
   const colors = {}, onFill = {};
   for (const [key, role] of Object.entries(peleRoles)) {
     if ('gray' in role) colors[key] = gray[`g${grayIndex(role.gray, mode)}`];

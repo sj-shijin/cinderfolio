@@ -38,12 +38,10 @@ for (const mode of ['light', 'dark']) {
   });
 }
 
-for (const [mode, { colors, onFill, series, vision }] of Object.entries(peleThemes)) {
-  if (vision.after.loss > vision.before.loss) throw new Error(`Pele ${mode} 色觉校正损失增大`);
-  if (vision.after.models.normal.minimum < seriesRecipe.distance.normal) throw new Error(`Pele ${mode} 普通色觉下的分类色过于接近`);
+for (const [mode, { colors, onFill, series }] of Object.entries(peleThemes)) {
   peleChecks[mode] = [
     ...Object.keys(series).flatMap(key => [
-      [`--pele-${key}`, '实底文字', colors[key], onFill[key], mode === 'dark' ? seriesRecipe.darkTextContrast : seriesRecipe.textContrast],
+      [`--pele-${key}`, '实底文字', colors[key], onFill[key], mode === 'dark' ? seriesRecipe.darkTextContrast : seriesRecipe.lightTextContrast],
       [`--pele-${key}`, '画布', colors[key], colors.bg, 3, false],
     ]),
     ...['accent', 'critical'].map(key => [`--pele-${key}`, '实底文字', colors[key], onFill[key], 4.5]),
@@ -121,10 +119,10 @@ console.log(`Cinderfolio：${Object.keys(seeds).length} 个输入色，${Object.
 console.log(`灰阶固定 ${grayDivisions} 等分，共 ${Object.keys(grayScale).length} 档；职责按亮暗镜像引用。`);
 console.log(`主题色五档：${Object.values(accentScale).join(' / ')}。文字选区采用主题色 25% + 画布 75%，保留原字色。`);
 console.log(`Shiki：${Object.keys(shikiRoles).length} 个颜色职责，亮暗主题 JSON 已导出；灰阶文字必要对比度检查通过，品牌色对比度另行记录。`);
-console.log(`Pele：${Object.keys(peleRoles).length} 个基础颜色变量；八色顺序固定，暗色明度偏移 ${seriesRecipe.darkLightnessOffset}；分类实底文字亮色 ≥ ${seriesRecipe.textContrast}:1、暗色 ≥ ${seriesRecipe.darkTextContrast}:1；甘特实底与文字 ≥ 4.5:1，亮暗共 ${Object.values(peleChecks).flat().filter(check => check.required).length} 项必要检查通过，画布对比度另行记录。`);
+console.log(`Pele：${Object.keys(peleRoles).length} 个基础颜色变量；八色继承品牌色明度和彩度，亮暗共用固定顺序；分类实底文字亮色 ≥ ${seriesRecipe.lightTextContrast}:1、暗色 ≥ ${seriesRecipe.darkTextContrast}:1；甘特实底与文字 ≥ 4.5:1，亮暗共 ${Object.values(peleChecks).flat().filter(check => check.required).length} 项必要检查通过，画布对比度另行记录。`);
 for (const [mode, { vision }] of Object.entries(peleThemes)) {
-  const remaining = Object.values(vision.after.models).reduce((sum, model) => sum + model.conflicts.length, 0);
-  console.log(`Pele ${mode}：OKLCH 品牌衍生八色；色觉检查短缺平方和 ${vision.before.loss} → ${vision.after.loss}，剩余 ${remaining} 对低于工程参考值，详情写入 colors.json。`);
+  const remaining = Object.values(vision.models).reduce((sum, model) => sum + model.conflicts.length, 0);
+  console.log(`Pele ${mode}：OKLCH 品牌衍生八色；色觉检查仅报告，${remaining} 项颜色对 / 模拟组合低于工程参考值，详情写入 colors.json。`);
 }
 for (const [mode, colors] of Object.entries(themes)) {
   console.log(`${mode}: 正文 ${contrast(colors.foreground, colors.background).toFixed(2)}:1；链接 ${contrast(colors.link, colors.background).toFixed(2)}:1；对比度达到参考值 ${checks[mode].filter(check => check.passes).length}/${checks[mode].length}。中性文字与控件必需检查均通过。`);

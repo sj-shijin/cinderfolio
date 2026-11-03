@@ -1,17 +1,14 @@
-/** OKLCH 八色生成与有限校正；纯计算，可在 Node.js 和浏览器中复用。 */
-import { seeds, contrast } from './palette.mjs';
+/** OKLCH 八色生成与色觉检查；纯计算，可在 Node.js 和浏览器中复用。 */
+import { seeds } from './palette.mjs';
 
 export const seriesRecipe = {
   space: 'oklch',
   // 色相环九等分；0° 留给品牌强调，其余八个槽位用于分类。
   hueOffsets: [40, 80, 120, 160, 200, 240, 280, 320],
-  lightness: 0.74,
-  darkLightnessOffset: -0.04,
-  textContrast: 7,
+  // 按原槽位编号交错输出；从第二槽起取色，拉开首个分类与强调色的距离。
+  order: [2, 4, 6, 8, 1, 3, 5, 7],
+  lightTextContrast: 4.5,
   darkTextContrast: 4.5,
-  chroma: 0.16,
-  lightnessStep: 0.01,
-  correction: { hue: [0, -6, 6, -12, 12], lightness: [0, -0.03, 0.03, -0.06, 0.06], chroma: [0, -0.02], passes: 3 },
   // ΔE_OK × 100 的工程检查参考值，并非通用的可访问性合格线。
   distance: { normal: 8, protanopia: 4.5, deuteranopia: 4.5, tritanopia: 4.5 },
 };
@@ -88,11 +85,7 @@ function features(hex) {
 
 const distance = (a, b) => Math.hypot(...a.map((value, index) => value - b[index])) * 100;
 
-function pairLoss(a, b) {
-  return Object.entries(seriesRecipe.distance).reduce((sum, [model, minimum]) => sum + Math.max(0, minimum - distance(a[model], b[model])) ** 2, 0);
-}
-
-/** 记录各模型最接近的一对和全部低于参考值的组合，保留剩余冲突。 */
+/** 记录各模型最接近的一对和全部低于参考值的组合，检查结果仅用于报告。 */
 export function checkColorVision(colors) {
   const samples = colors.map(features);
   let loss = 0;
@@ -110,75 +103,25 @@ export function checkColorVision(colors) {
   return { loss: Number(loss.toFixed(6)), models };
 }
 
-export function createCategoricalPalette(input = seeds, mode = 'light') {
+export function createCategoricalPalette(input = seeds) {
   const brand = toOklch(input.accent);
   // 中性品牌色缺少稳定色相，沿用默认品牌色的色相作为确定的起点。
   const anchor = brand.c < 0.01 ? toOklch(seeds.accent).h : brand.h;
-  const quality = hex => contrast(hex, input.ink) / seriesRecipe.textContrast;
-  const sample = point => {
-    const hex = fromOklch(point);
-    return { ...point, hex, features: features(hex) };
-  };
-  const initial = seriesRecipe.hueOffsets.map(offset => {
-    const point = { l: seriesRecipe.lightness, c: seriesRecipe.chroma, h: wrapHue(anchor + offset) };
-    let best = sample(point);
-    // 先生成亮色基准八色，以深色文字为参照；只沿 L 向上适配。
-    for (let step = 0; step <= 100; step++) {
-      const l = clamp(point.l + step * seriesRecipe.lightnessStep);
-      const current = sample({ ...point, l });
-      if (quality(current.hex) > quality(best.hex)) best = current;
-      if (quality(current.hex) >= 1) return current;
-      if (l === 0 || l === 1) break;
-    }
-    return best;
-  });
-  const before = checkColorVision(initial.map(value => value.hex));
-  const floor = Math.min(seriesRecipe.distance.normal, before.models.normal.minimum);
-  const options = initial.map(point => {
-    const candidates = new Map();
-    // 每个槽位最多偏移 12°，与品牌色相仍至少间隔 28°，不交换类别顺序。
-    for (const dh of seriesRecipe.correction.hue) {
-      for (const dl of seriesRecipe.correction.lightness) for (const dc of seriesRecipe.correction.chroma) {
-        const current = sample({ l: clamp(point.l + dl), c: point.c + dc, h: wrapHue(point.h + dh) });
-        if (quality(current.hex) >= 1) candidates.set(current.hex, current);
-      }
-    }
-    return [...candidates.values()];
-  });
-  const selected = [...initial];
-  for (let pass = 0; pass < seriesRecipe.correction.passes; pass++) {
-    let changed = false;
-    for (let index = 0; index < selected.length; index++) {
-      const others = selected.filter((_, other) => other !== index);
-      const loss = value => others.reduce((sum, other) => sum + pairLoss(value.features, other.features), 0);
-      let best = selected[index], bestLoss = loss(best);
-      for (const candidate of options[index]) {
-        if (others.some(other => distance(candidate.features.normal, other.features.normal) + 1e-9 < floor)) continue;
-        const value = loss(candidate);
-        if (value < bestLoss - 1e-9) { best = candidate; bestLoss = value; }
-      }
-      if (best.hex !== selected[index].hex) { selected[index] = best; changed = true; }
-    }
-    if (!changed) break;
-  }
-  // 暗色只降低已校正颜色的明度，保留类别顺序、色相与彩度；超出色域时仍按原规则降低 C。
-  const display = value => {
-    if (mode !== 'dark') return value;
-    const color = toOklch(value.hex);
-    return sample({ ...color, l: clamp(color.l + seriesRecipe.darkLightnessOffset) });
-  };
   const colors = {}, series = {};
-  selected.map(display).forEach((value, index) => {
+  seriesRecipe.order.forEach((slot, index) => {
+    const hueOffset = seriesRecipe.hueOffsets[slot - 1];
+    // 直接继承品牌色的 L / C，亮暗共用；仅在色域映射时降低 C。
+    const hex = fromOklch({ ...brand, h: wrapHue(anchor + hueOffset) });
     const key = `series-${index + 1}`;
-    const actual = toOklch(value.hex);
-    colors[key] = value.hex;
+    const actual = toOklch(hex);
+    colors[key] = hex;
     series[key] = {
-      hueOffset: seriesRecipe.hueOffsets[index],
+      hueOffset,
       l: Number(actual.l.toFixed(5)), c: Number(actual.c.toFixed(5)), h: Number(actual.h.toFixed(3)),
-      // 校正量记录基准八色的有限校正，暗色明度偏移单独维护在 seriesRecipe。
-      correction: { l: Number((selected[index].l - initial[index].l).toFixed(3)), c: Number((selected[index].c - initial[index].c).toFixed(3)), h: Number((wrapHue(selected[index].h - initial[index].h + 180) - 180).toFixed(3)) },
     };
   });
-  const displayedBefore = mode === 'dark' ? checkColorVision(initial.map(display).map(value => value.hex)) : before;
-  return { colors, series, vision: { model: 'Machado 2009 / severity 100', anchor: Number(anchor.toFixed(3)), neutralBrand: brand.c < 0.01, before: displayedBefore, after: checkColorVision(Object.values(colors)) } };
+  return { colors, series, vision: {
+    model: 'Machado 2009 / severity 100', anchor: Number(anchor.toFixed(3)), neutralBrand: brand.c < 0.01,
+    ...checkColorVision(Object.values(colors)),
+  } };
 }

@@ -44,7 +44,7 @@ export function createMermaidTheme(input = seeds, mode = 'light') {
     fontFamily: 'sans-serif',
     useGradient: false,
     dropShadow: 'none',
-    // 分类色已针对实底文字校正对比度，饼图不再叠加默认的 0.7 透明度。
+    // 饼图使用分类原色，不叠加 Mermaid 默认的 0.7 透明度。
     pieOpacity: 1,
   };
   for (const [role, variables] of Object.entries(roleVariables)) {

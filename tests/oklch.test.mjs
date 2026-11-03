@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { seeds, contrast } from '../palette.mjs';
+import { seeds } from '../palette.mjs';
 import { toOklch, fromOklch, simulateColorVision, checkColorVision, createCategoricalPalette, seriesRecipe } from '../oklch.mjs';
 
 test('OKLCH 转换核对标准红色，并保持 sRGB 往返与色域内输出', () => {
@@ -31,33 +31,32 @@ test('Machado 严重度 100 矩阵在线性 RGB 中模拟，保持黑白中性',
   }
 });
 
-test('色觉校正有界、确定，并降低多种品牌色共用八色的冲突损失', () => {
+test('多种品牌色保留主题明度和彩度上限，色觉检查只报告最终颜色', () => {
   for (const accent of ['#f97316', '#0095ff', '#15f9ad', '#8b5cf6']) {
     const input = { ...seeds, accent };
     const result = createCategoricalPalette(input);
     assert.deepEqual(createCategoricalPalette(input), result);
     assert.equal(new Set(Object.values(result.colors)).size, 8);
-    assert.ok(result.vision.after.loss < result.vision.before.loss, accent);
-    assert.ok(result.vision.after.models.normal.minimum >= seriesRecipe.distance.normal);
+    assert.deepEqual(result.vision.models, checkColorVision(Object.values(result.colors)).models);
+    const brand = toOklch(accent);
     for (const [key, value] of Object.entries(result.series)) {
-      assert.ok(Math.abs(value.correction.h) <= 12);
-      assert.ok(Math.abs(value.correction.l) <= 0.06);
-      assert.ok(value.correction.c >= -0.02 && value.correction.c <= 0);
-      const fill = result.colors[key];
-      assert.ok(contrast(fill, input.ink) >= seriesRecipe.textContrast);
-      // 校正与 HEX 量化后仍避开品牌色相；允许不足 1° 的量化误差。
-      const hueGap = Math.abs((toOklch(fill).h - toOklch(accent).h + 540) % 360 - 180);
-      assert.ok(hueGap >= 27, `${accent}.${key}: ${hueGap}`);
+      const fill = toOklch(result.colors[key]);
+      assert.ok(Math.abs(fill.l - brand.l) < 0.003, `${accent}.${key}.l`);
+      assert.ok(fill.c <= brand.c + 0.002, `${accent}.${key}.c`);
+      // 色域适配与 HEX 量化后仍保留指定色相；允许不足 1° 的量化误差。
+      const expectedHue = brand.h + value.hueOffset;
+      assert.ok(Math.abs((fill.h - expectedHue + 540) % 360 - 180) < 1, `${accent}.${key}.h`);
     }
   }
 });
 
-test('九等分排除品牌色相，保持八个固定槽位，中性品牌色采用默认色相', () => {
+test('九等分排除品牌色相，交错输出八个固定槽位，中性品牌色采用默认色相', () => {
   assert.deepEqual(seriesRecipe.hueOffsets, [40, 80, 120, 160, 200, 240, 280, 320]);
+  assert.deepEqual(seriesRecipe.order, [2, 4, 6, 8, 1, 3, 5, 7]);
   const original = createCategoricalPalette(seeds);
-  assert.deepEqual(Object.values(original.series).map(s => s.hueOffset), seriesRecipe.hueOffsets);
+  assert.deepEqual(Object.values(original.series).map(s => s.hueOffset), [80, 160, 240, 320, 40, 120, 200, 280]);
   const neutral = createCategoricalPalette({ ...seeds, accent: '#808080' });
   assert.equal(neutral.vision.neutralBrand, true);
   assert.equal(neutral.vision.anchor, original.vision.anchor);
-  assert.deepEqual(neutral.colors, original.colors);
+  assert.deepEqual(Object.values(neutral.colors), Array(8).fill('#808080'));
 });
