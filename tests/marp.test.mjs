@@ -13,28 +13,37 @@ import config from '../marp-engine.mjs';
 const parser = unified().use(rehypeParse, { fragment: true });
 let marp;
 
-test('论文式算法与 Python 代码并存，重复构建的算法编号稳定', async () => {
+test('pseudo 算法连续编号，Python 高亮与重复构建保持稳定', async () => {
   const algorithm = String.raw`\begin{algorithm}
 \caption{CDCL}
 \begin{algorithmic}
 \STATE $C \gets$ \CALL{Propagate}{}
 \end{algorithmic}
 \end{algorithm}`;
-  const source = '## 算法\n\n```pseudocode\n' + algorithm + '\n```\n\n---\n\n## Python\n\n```python\nreturn None\n```';
+  const source = '## 算法\n\n```pseudo\n' + algorithm + '\n```\n\n---\n\n```pseudo\n' + algorithm
+    + '\n```\n\n---\n\n## Python\n\n```python\nreturn None\n```';
   for (let i = 0; i < 2; i++) {
     const { html } = marp.render(source);
-    assert.match(html, /class="cf-pseudocode"/);
+    assert.equal((html.match(/class="cf-pseudocode"/g) ?? []).length, 2);
     assert.match(html, /Algorithm 1/);
+    assert.match(html, /Algorithm 2/);
     assert.match(html, /data-math="mathjax"/);
     assert.match(html, /jax="CHTML"/);
     assert.match(html, /class="shiki /);
   }
 });
+test('pseudocode 围栏按普通代码显示，不再渲染为算法', () => {
+  const source = '```pseudocode\n' + String.raw`\begin{algorithmic}\STATE $x \gets 1$\end{algorithmic}` + '\n```';
+  const { html } = marp.render(source);
+  assert.doesNotMatch(html, /class="cf-pseudocode"/);
+  assert.match(html, /class="shiki /);
+  assert.match(html, /\\STATE/);
+});
 test('算法默认跟随 Marp 文稿的公式引擎，围栏可以显式覆盖', () => {
   const algorithm = String.raw`\begin{algorithmic}\STATE $x \gets 1$\end{algorithmic}`;
   for (const math of ['katex', 'mathjax']) {
     const other = math === 'katex' ? 'mathjax' : 'katex';
-    const source = `---\nmath: ${math}\n---\n\n\`\`\`pseudocode\n${algorithm}\n\`\`\`\n\n\`\`\`pseudocode math=${other}\n${algorithm}\n\`\`\``;
+    const source = `---\nmath: ${math}\n---\n\n\`\`\`pseudo\n${algorithm}\n\`\`\`\n\n\`\`\`pseudo math=${other}\n${algorithm}\n\`\`\``;
     const algorithms = elements(parser.parse(marp.render(source).html), node => node.properties?.className?.includes('cf-pseudocode'));
     assert.deepEqual(algorithms.map(node => node.properties.dataMath), [math, other]);
     for (const [node, engine] of [[algorithms[0], math], [algorithms[1], other]]) {
@@ -47,7 +56,7 @@ test('Marp 围栏将排版开关传给伪代码渲染器', () => {
   const algorithm = String.raw`\begin{algorithmic}
 \IF{$p < r$}\STATE $q \gets p$\ENDIF
 \end{algorithmic}`;
-  const { html } = marp.render('```pseudocode noEnd=false scopeLines=false\n' + algorithm + '\n```');
+  const { html } = marp.render('```pseudo noEnd=false scopeLines=false\n' + algorithm + '\n```');
   assert.match(html, /end if/);
   assert.doesNotMatch(html, /with-scopelines/);
 });

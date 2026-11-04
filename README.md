@@ -131,10 +131,10 @@ Prompt 引用使用页并指导下载模块；默认配色提供文件直链，�
 
 ## 论文式伪代码
 
-`pseudocode` 围栏使用 pseudocode.js 2.4.1 的 `algorithmic` 语法，每个围栏放一个算法：
+使用与 [Obsidian Pseudocode 插件](https://github.com/ytliu74/obsidian-pseudocode#usage)一致的 `pseudo` 围栏，采用 pseudocode.js 2.4.1 的 `algorithmic` 语法，每个围栏放一个算法：
 
 ````markdown
-```pseudocode
+```pseudo
 \begin{algorithm}
 \caption{Conflict check}
 \begin{algorithmic}

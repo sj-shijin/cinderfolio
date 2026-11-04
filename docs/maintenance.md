@@ -102,7 +102,7 @@ pre code { font-size: 24px; }
 
 `--cf-marp-column-media-height` 默认 `none`，作用于双栏代码和 Pele 图表。媒体与代码保留横向防溢出及 Marp 原生缩放，总高度由文稿作者安排；图片可用 `w:` / `h:` 指定尺寸，图注用 `figcaption`。分割背景图的兼容范围见 [README](../README.md#适配范围)。
 
-[`marp-engine.mjs`](../marp-engine.mjs) 在构建期将 `mermaid` 围栏交给 Pele、`pseudocode` 交给算法渲染器，其余交给 Shiki；未知语言按纯文本转义，代码保留原生自动缩放。Pele 按 Markdown 行号生成稳定的 `idPrefix`，同步处理 ID 与可访问性引用。浏览器展示生成的 SVG、HTML 和变量主题。
+[`marp-engine.mjs`](../marp-engine.mjs) 在构建期将 `mermaid` 围栏交给 Pele、伪代码围栏交给算法渲染器，其余交给 Shiki；未知语言按纯文本转义，代码保留原生自动缩放。Pele 按 Markdown 行号生成稳定的 `idPrefix`，同步处理 ID 与可访问性引用。浏览器展示生成的 SVG、HTML 和变量主题。
 
 标注块使用 `@mdit/plugin-alert` 的 `deep: true`，支持分栏、列表和引用中的五种 GitHub 标记；高亮、上下标由 `markdown-it-mark / sub / sup` 解析。插件按锁文件版本在构建期运行，代码围栏保留原文。样式跟随 `cf-marp.css`，语法能力由引擎提供。
 
@@ -110,7 +110,7 @@ pre code { font-size: 24px; }
 
 ## 算法渲染
 
-[`pseudocode-render.mjs`](../pseudocode-render.mjs) 共用 pseudocode.js 的 `algorithmic` 语法，`renderPseudocode()` 默认 KaTeX，Marp 则使用文稿选择的引擎。`noEnd`、`scopeLines` 默认均为 `true`，显示选项与原始语法分别处理；算法编号由调用方按文档计数。完整示例见 [README](../README.md#论文式伪代码)。
+网页与 Marp 在代码高亮前识别伪代码围栏，调用 [`pseudocode-render.mjs`](../pseudocode-render.mjs) 的 `renderPseudocode()`，共用 pseudocode.js 的 `algorithmic` 语法。渲染器默认 KaTeX，Marp 则使用文稿选择的引擎。`noEnd`、`scopeLines` 默认均为 `true`，显示选项与原始语法分别处理；算法编号由调用方按文档计数。围栏写法与完整示例见 [README](../README.md#论文式伪代码)。
 
 [`pseudocode.mjs`](../pseudocode.mjs) 沿用原始横线、标题间距与 `1.2` 行高；横线使用 `--cf-text-muted`，关键词使用强调色系的 `darker / light`。算法独立设置字体、字号、字重和对齐，网页默认 `1rem`，Marp 默认 `24px`；通过变量调整：
 

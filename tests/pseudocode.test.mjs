@@ -57,7 +57,7 @@ test('两个公式引擎实际分别排版，交错渲染不会串引擎或编�
   assert.equal(renderPseudocode(source, 1, { math: 'katex' }), katex);
   assert.equal(renderPseudocode(source, 1, { math: 'mathjax' }), mathjax);
   assert.equal(pseudocodeMathEngine(undefined, 'mathjax'), 'mathjax');
-  assert.equal(pseudocodeMathEngine('pseudocode math=katex', 'mathjax'), 'katex');
+  assert.equal(pseudocodeMathEngine('pseudo math=katex', 'mathjax'), 'katex');
   assert.throws(() => pseudocodeMathEngine('math=unknown'), /不支持/);
   assert.deepEqual(pseudocodeOptions('', 'mathjax'), { math: 'mathjax' });
   for (const enabled of [true, false]) {

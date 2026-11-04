@@ -45,14 +45,14 @@ export default {
     marp.markdown.core.ruler.push('cinderfolio_pseudocode_numbering', state => {
       let number = 0;
       for (const token of state.tokens) {
-        if (token.type === 'fence' && token.info.trim().split(/\s+/)[0] === 'pseudocode') {
+        if (token.type === 'fence' && token.info.trim().split(/\s+/)[0] === 'pseudo') {
           token.meta = { ...token.meta, pseudocodeNumber: ++number };
         }
       }
     });
     marp.markdown.renderer.rules.fence = (tokens, position, options, env, renderer) => {
       const token = tokens[position];
-      if (token.info.trim().split(/\s+/)[0] === 'pseudocode') {
+      if (token.info.trim().split(/\s+/)[0] === 'pseudo') {
         const configured = marp.options.math;
         const fallback = marp.lastGlobalDirectives.math
           ?? (typeof configured === 'string' ? configured : configured?.lib) ?? 'mathjax';

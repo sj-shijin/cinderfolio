@@ -511,7 +511,7 @@ $$
 ### 写法
 
 ````markdown
-```pseudocode
+```pseudo
 \begin{algorithm}
 \caption{Quicksort}
 \begin{algorithmic}
@@ -532,7 +532,7 @@ $$
 
 ### 效果
 
-```pseudocode
+```pseudo
 \begin{algorithm}
 \caption{Quicksort}
 \begin{algorithmic}
