@@ -155,7 +155,7 @@ node --test tests/marp.test.mjs
 g[i] = mix(paper, ink, i * 100 / 16); // i = 0…16；暗色职责取 16 - i。
 accentSteps = { darker: -10, dark: -5, brand: 0, light: 10, lighter: 20 }; // HSL 明度百分点。
 selection = mix(accent, background, 25);          // 文字选区保留原字色。
-selectedBackground = mix(accent, background, 15); // 当前项目与高亮行淡底。
+selectedBackground = mix(accent, background, 15); // 当前项目、代码行与词高亮淡底。
 controlSelectedBackground = accent;              // 实底文字选择对比更高的 ink / paper。
 ```
 

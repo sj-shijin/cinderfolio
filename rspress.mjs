@@ -130,6 +130,12 @@ html .shiki.has-highlighted .line.highlighted:not(.error):not(.warning) {
   box-shadow: inset 2px 0 var(--cf-interaction);
 }
 
+/* 词高亮复用行高亮的底色与强调色，保留原生边框尺寸和语法字色。 */
+html .shiki .highlighted-word {
+  background-color: var(--cf-selected-background);
+  border-color: var(--cf-interaction);
+}
+
 html .rp-button--brand {
   color: var(--cf-background);
   background: var(--cf-foreground);

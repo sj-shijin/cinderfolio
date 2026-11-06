@@ -79,11 +79,11 @@ export const recipes = {
   controlBorder: { label: '控件边界', gray: 5, usage: '次要按钮、切换按钮与搜索输入框的边界' },
   controlSelectedBackground: { label: '控件选中底色', accent: 'brand', usage: '切换按钮等控件直接使用品牌基准色的实底' },
   controlSelectedForeground: { label: '控件选中文字', contrast: 'controlSelectedBackground', usage: '品牌基准色实底上的文字与滑块，自动选择对比更高的端点' },
-  interaction: { label: '交互提示', accent: 'brand', usage: '导航强调、悬浮提示、焦点、搜索当前项边框、代码高亮线与复制成功提示' },
+  interaction: { label: '交互提示', accent: 'brand', usage: '导航强调、悬浮提示、焦点、搜索当前项边框、代码高亮边界与复制成功提示' },
   link: { label: '链接与当前项目文字', accent: { light: 'dark', dark: 'light' }, usage: '正文链接、当前项目文字与语法关键词' },
   diagramStroke: { label: '图表描边', accent: { light: 'darker', dark: 'light' }, usage: '图表节点与分组描边' },
   selection: { label: '文字选区底色', mix: ['accent', 'background', 25], usage: '鼠标或键盘选择文字；正文、说明与链接保留原字色' },
-  selectedBackground: { label: '当前项目底色', mix: ['accent', 'background', 15], usage: '当前导航、项目与代码高亮行的淡强调底色' },
+  selectedBackground: { label: '当前项目底色', mix: ['accent', 'background', 15], usage: '当前导航、项目、代码行与词高亮的淡强调底色' },
 };
 
 export function createPalette(input = seeds) {
